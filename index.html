@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#2f6b3a">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>funGISc</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root { --green:#2f6b3a; --green2:#e6efe5; --red:#b3261e; --ink:#1d2a20; --muted:#5d6b60;
+          --paper:#f6f4ee; --card:#fff; --line:#d9d5c8; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; margin:0; }
+  body { background:var(--paper); color:var(--ink); font-family:"Segoe UI", Arial, sans-serif; font-size:16px; }
+  .screen { position:fixed; inset:0; display:flex; flex-direction:column; }
+  .hidden { display:none !important; }
+  header { background:var(--green); color:#fff; padding:10px 16px; display:flex; align-items:center; gap:10px; }
+  header h1 { font-size:16px; margin:0; flex:1; }
+  header button { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.6); border-radius:8px;
+                  padding:5px 10px; font-size:14px; width:auto; margin:0; }
+  .pad { padding:16px; overflow:auto; flex:1; }
+  .center { justify-content:center; }
+  h2 { font-size:22px; color:var(--green); margin:0 0 12px; }
+  p { line-height:1.55; margin:0 0 12px; }
+  .muted { color:var(--muted); font-size:14px; }
+  input[type=email], input[type=text], input[type=number], select {
+    width:100%; font-size:18px; padding:12px; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  input.code { letter-spacing:6px; text-align:center; direction:ltr; }
+  button { width:100%; padding:14px; font-size:18px; font-weight:700; border:0; border-radius:10px;
+           background:var(--green); color:#fff; margin-top:10px; cursor:pointer; }
+  button.second { background:#fff; color:var(--green); border:2px solid var(--green); }
+  button.small { width:auto; padding:8px 12px; font-size:15px; margin:0; }
+  button.danger { background:var(--red); }
+  button:disabled { opacity:.45; }
+  label.check { display:flex; gap:10px; align-items:flex-start; margin:10px 0; line-height:1.5; }
+  label.check input { width:22px; height:22px; flex:none; margin-top:2px; }
+  .map { flex:1; min-height:200px; }
+  .sheet { background:var(--paper); border-top:1px solid var(--line); padding:12px 16px 16px; max-height:50%; overflow:auto; }
+  .cellrow { display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .cellrow .num { width:30px; height:30px; border-radius:50%; background:var(--green); color:#fff;
+                  display:flex; align-items:center; justify-content:center; font-weight:700; flex:none; }
+  .cellrow .grow { flex:1; }
+  .cellrow a { color:var(--green); font-size:15px; }
+  .rate { display:flex; gap:8px; margin:12px 0; direction:ltr; }
+  .rate button { margin:0; font-size:24px; padding:16px 0; background:#fff; color:var(--green); border:2px solid var(--green); }
+  .rate button.on { background:var(--green); color:#fff; }
+  #timer { font-size:44px; font-weight:700; text-align:center; font-variant-numeric:tabular-nums; direction:ltr; line-height:1.1; }
+  #searchStatus { text-align:center; font-size:14px; color:var(--muted); min-height:20px; }
+  #exitAlert { display:none; background:var(--red); color:#fff; text-align:center; padding:12px; font-size:20px; font-weight:700; }
+  .fab { position:absolute; left:16px; bottom:16px; z-index:1000; width:64px; height:64px; border-radius:50%;
+         font-size:36px; line-height:1; padding:0; box-shadow:0 3px 10px rgba(0,0,0,.3); }
+  button.locate { width:48px; height:48px; padding:0; margin:0 0 6px; border-radius:50%; background:#fff;
+                  color:#1a73e8; font-size:28px; line-height:1; box-shadow:0 2px 8px rgba(0,0,0,.35); }
+  .mapwrap { position:relative; flex:1; display:flex; }
+  .mapwrap .map { flex:1; }
+  .badge { background:#fff; color:var(--green); border-radius:12px; padding:2px 8px; font-size:13px; font-weight:700; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px; }
+  .card .thumbs { display:flex; gap:6px; margin-top:8px; }
+  .card .thumbs img { width:31%; aspect-ratio:1; object-fit:cover; border-radius:8px; background:#ddd; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .chips { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+  .chips button { width:auto; margin:0; padding:8px 14px; font-size:16px; background:#fff; color:var(--green); border:2px solid var(--green); }
+  .chips button.on { background:var(--green); color:#fff; }
+  #camera { position:fixed; inset:0; background:#000; z-index:3000; display:flex; flex-direction:column; }
+  #camera video { flex:1; width:100%; object-fit:cover; min-height:0; }
+  #camera .bar { padding:12px 16px 20px; color:#fff; text-align:center; }
+  #camera .shutter { width:76px; height:76px; border-radius:50%; background:#fff; border:5px solid #9bbf9f; margin:8px auto 0; padding:0; }
+  #toast { position:fixed; left:16px; right:16px; bottom:24px; z-index:5000; background:#222; color:#fff;
+           padding:12px 16px; border-radius:10px; text-align:center; display:none; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td, th { padding:6px 4px; border-bottom:1px solid var(--line); text-align:right; vertical-align:middle; }
+  td select { font-size:14px; padding:4px; }
+  .viewer { position:fixed; inset:0; z-index:4000; background:rgba(0,0,0,.85); display:flex; flex-direction:column;
+            align-items:center; justify-content:center; padding:16px; }
+  .viewer img { max-width:100%; max-height:70vh; border-radius:8px; }
+  .viewer .cap { color:#fff; margin:10px 0; text-align:center; }
+  .credit { font-size:12px; color:#777; text-align:center; margin-top:24px; }
+  .shroom { font-size:15px; line-height:15px; opacity:.85; text-shadow:0 0 2px #fff; }
+  #celebrate { position:fixed; inset:0; z-index:5000; pointer-events:none; display:none; }
+  #celebrate .msg { position:absolute; top:36%; left:50%; transform:translateX(-50%); white-space:nowrap; font-size:28px; font-weight:800;
+                    color:#fff; background:rgba(30,60,35,.88); padding:16px 26px; border-radius:18px; box-shadow:0 4px 18px rgba(0,0,0,.4); }
+  #celebrate i { position:absolute; top:-12px; width:9px; height:14px; border-radius:2px; animation:fall linear forwards; }
+  @keyframes fall { to { transform:translateY(110vh) rotate(720deg); } }
+</style>
+</head>
+<body>
+
+<div id="celebrate"><div class="msg">השלמת את המסלול! 🍄</div></div>
+
+<!-- ============ 1. login ============ -->
+<section id="sLogin" class="screen hidden">
+  <header><h1>funGISc · מחפשים פטריות</h1></header>
+  <div class="pad">
+    <h2>כניסה</h2>
+    <p>מקלידים מייל. משתתפים חדשים נכנסים אחרי אישור של צוות המחקר.</p>
+    <input type="email" id="loginEmail" placeholder="המייל שלך" autocomplete="email" inputmode="email">
+    <button id="btnRequest">שליחה</button>
+    <div id="loginPending" class="card hidden" style="margin-top:14px">
+      הבקשה נשלחה. כשהיא תאושר יגיע אליך מייל עם קוד כניסה.
+    </div>
+    <div id="loginCodeBox" class="hidden" style="margin-top:14px">
+      <p>הקלידו את קוד הכניסה הקבוע שלך (6 ספרות) מהמייל:</p>
+      <input type="text" id="loginCode" class="code" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+      <button id="btnVerify">כניסה</button>
+      <button id="btnResend" class="second">שליחת הקוד שוב למייל</button>
+    </div>
+    <p class="muted" id="loginMsg" style="margin-top:12px"></p>
+    <p class="credit">funGISc פותחה על ידי ניצן בר שמואל, מכון שמיר למחקר</p>
+  </div>
+</section>
+
+<!-- ============ 2. consent + location ============ -->
+<section id="sConsent" class="screen hidden">
+  <header><h1>לפני שיוצאים</h1></header>
+  <div class="pad">
+    <h2>הסכמה להשתתפות</h2>
+    <div class="card">
+      <p>זהו ניטור של פטריות ביערות ובשטחים פתוחים, במסגרת מחקר של ניצן בר שמואל.</p>
+      <p><b>מה נאסף:</b> המייל שלך, דירוג המקום, התצפיות והתמונות שצילמת, ומסלול ההליכה בזמן החיפוש בתא בלבד (מרגע "התחלתי" ועד הסוף).</p>
+      <p><b>מה לא נאסף:</b> מיקום מחוץ לזמן החיפוש, אנשי קשר או כל מידע אחר מהטלפון.</p>
+      <p><b>למה:</b> לבדוק איפה ביער יש יותר פטריות. המייל שלך גלוי לצוות המחקר בלבד.</p>
+      <p><b>בטיחות:</b> היציאה ליער היא על אחריותך. הולכים בזהירות, לא קוטפים ולא טועמים פטריות, ולא נכנסים לשטח סגור.</p>
+    </div>
+    <label class="check"><input type="checkbox" id="chkConsent"> קראתי, אני בן/בת 18 ומעלה ומסכים/ה להשתתף.</label>
+    <button id="btnConsent" disabled>אישור מיקום והמשך</button>
+    <p class="muted">הטלפון ישאל אם לאפשר מיקום. בוחרים "בזמן השימוש באפליקציה".</p>
+  </div>
+</section>
+
+<!-- ============ 3. home: my kit ============ -->
+<section id="sHome" class="screen hidden">
+  <header>
+    <h1>התאים שלי</h1>
+    <button id="btnDraft" class="hidden">טיוטה</button>
+    <button id="btnOutbox" class="hidden">ממתינים לשליחה <span class="badge" id="outboxCount">0</span></button>
+    <button id="btnMenu">☰</button>
+  </header>
+  <div id="menu" class="card hidden" style="position:absolute;top:52px;left:8px;z-index:2000;width:200px">
+    <button class="second small" style="width:100%;margin:4px 0" id="mHistory">ההיסטוריה שלי</button>
+    <button class="second small hidden" style="width:100%;margin:4px 0" id="mGuide">איך מצלמים פטרייה</button>
+    <button class="second small hidden" style="width:100%;margin:4px 0" id="mAdmin">לוח בקרה</button>
+    <a class="hidden" id="mDash" href="dashboard.html" target="_blank"><button class="second small" style="width:100%;margin:4px 0">דשבורד המחקר (מחשב)</button></a>
+    <button class="second small hidden" style="width:100%;margin:4px 0" id="mTestKit">איפה מחפשים היום?</button>
+    <button class="second small" style="width:100%;margin:4px 0" id="mLogout">התנתקות</button>
+    <p class="credit" style="margin:8px 0 0">funGISc · ניצן בר שמואל<br>מכון שמיר למחקר</p>
+  </div>
+  <div id="homeMap" class="map"></div>
+  <div class="sheet" id="homeSheet"></div>
+</section>
+
+<!-- ============ 4. arrival: quality ============ -->
+<section id="sArrive" class="screen hidden">
+  <header><h1 id="arriveTitle">הגעתי לתא</h1><button id="btnArriveBack">חזרה</button></header>
+  <div class="pad">
+    <h2>לפני שמתחילים לחפש</h2>
+    <p>במבט ראשון, עד כמה המקום נראה לך טוב לפטריות?</p>
+    <div class="rate" id="rate"></div>
+    <p class="muted" style="display:flex;justify-content:space-between"><span>5 = מצוין</span><span>1 = גרוע</span></p>
+    <p>בלחיצה על "התחלתי" מתחיל טיימר של <b id="minutesTxt">20</b> דקות. אפשר לחפש בכל התא, ונשמע צליל אם יוצאים ממנו.</p>
+    <button id="btnStart" disabled>התחלתי לחפש</button>
+  </div>
+</section>
+
+<!-- ============ 5. search ============ -->
+<section id="sSearch" class="screen hidden">
+  <div id="exitAlert">יצאת מהתא. חזרו פנימה</div>
+  <div class="mapwrap">
+    <div id="searchMap" class="map"></div>
+    <button class="fab" id="btnPlus" aria-label="תצפית חדשה">+</button>
+  </div>
+  <div class="sheet">
+    <div id="timer">20:00</div>
+    <div id="searchStatus"></div>
+    <div class="muted" style="text-align:center" id="obsCount">0 תצפיות</div>
+    <div id="earlyBox" class="card hidden" style="margin-top:8px;text-align:center"><b id="earlyMsg"></b>
+      <div style="display:flex;gap:8px"><button id="btnEarlyEnd" style="flex:1">לסיים</button><button id="btnEarlyGo" class="second" style="flex:1">להמשיך לחפש</button></div></div>
+    <button id="btnFinish" class="second">סיום החיפוש</button>
+  </div>
+</section>
+
+<!-- ============ 6. observation form ============ -->
+<section id="sObs" class="screen hidden">
+  <header><h1>תצפית חדשה</h1><button id="btnObsCancel">ביטול</button></header>
+  <div class="pad" style="display:flex;flex-direction:column">
+    <div class="muted" id="stepNo" style="text-align:center"></div>
+    <h2 id="stepTitle" style="text-align:center;margin-top:8px"></h2>
+    <div id="stepBody" style="flex:1"></div>
+    <div style="display:flex;gap:10px">
+      <button id="btnStepBack" class="second" style="flex:1;font-size:26px" aria-label="אחורה">→</button>
+      <button id="btnStepOk" style="flex:2;font-size:26px" aria-label="קדימה">←</button>
+    </div>
+    <p class="muted" style="text-align:center">הטיימר והמסלול ממשיכים לרוץ</p>
+  </div>
+</section>
+
+<!-- ============ 7. end of visit ============ -->
+<section id="sEnd" class="screen hidden">
+  <header><h1>סיכום התא</h1></header>
+  <div class="pad">
+    <p id="endMsg"></p>
+    <div id="endCards"></div>
+    <button id="btnNothing" class="hidden">חיפשתי ולא מצאתי פטריות · שלח</button>
+    <button id="btnSendNow">לשלוח עכשיו</button>
+    <button id="btnSendLater" class="second">לשלוח אחר כך</button>
+    <button id="btnPark" class="second">שמור בטיוטות וחזור</button>
+  </div>
+</section>
+
+<!-- ============ 8. history ============ -->
+<section id="sHistory" class="screen hidden">
+  <header><h1>ההיסטוריה שלי</h1><button class="back">חזרה</button></header>
+  <div id="histMap" class="map" style="flex:1"></div>
+  <div class="sheet" id="histList"></div>
+</section>
+
+<!-- ============ 9. admin ============ -->
+<section id="sAdmin" class="screen hidden">
+  <header><h1>לוח בקרה</h1><button id="btnAdminReload">רענון</button><button class="back">חזרה</button></header>
+  <div id="adminMap" class="map" style="flex:1"></div>
+  <div class="sheet" style="max-height:55%">
+    <select id="adminWho"></select>
+    <div id="adminSummary" class="muted" style="margin:8px 0"></div>
+    <table id="adminUsers"></table>
+  </div>
+</section>
+
+<div id="camera" class="hidden">
+  <video id="camVideo" autoplay playsinline muted></video>
+  <div class="bar">
+    <div id="camLabel">מלמעלה</div>
+    <button class="shutter" id="btnShutter" aria-label="צילום"></button>
+    <button class="second small" style="margin-top:10px" id="btnCamClose">סגירה</button>
+  </div>
+</div>
+<input type="file" id="fileFallback" accept="image/*" capture="environment" class="hidden">
+<div id="toast"></div>
+
+<script>
+// ================= settings =================
+// Paste the web-app URL of the Google deployment here (Deploy -> New deployment -> Web app).
+var API_URL = '';   // your Apps Script web-app URL; empty = local test mode with a mock server
+var SEARCH_MINUTES = 20;
+var STEEP_DEG      = 25;     // safety mark: a cell this steep (degrees) gets a warning
+var EXIT_BUFFER_M  = 5;      // alert when this far outside the cell edge
+var EXIT_FIXES     = 3;      // ...for this many fixes in a row
+var MAX_ACCURACY_M = 25;     // poorer fixes never trigger the alert
+var TRACK_EVERY_S  = 2;
+var ALERT_REPEAT_S = 5;
+var PHOTO_MAX_PX   = 1600;
+var SHOTS = [['top', 'מלמעלה'], ['under', 'מלמטה'], ['habitat', 'בית הגידול']];
+var COUNTS = [['1', 1], ['2-5', 3], ['6-10', 8], ['עשרות', 20]];
+var TAXA = [['', 'לא יודע/ת'], ['species', 'מין'], ['genus', 'סוג'], ['family', 'משפחה']];
+var HEB_LABELS = 'אבגדהוזחטיכלמנסעפצקרשת';
+
+var MOCK = /[?&]mock=1/.test(location.search) || !API_URL;   // local test without Google
+
+// ================= small helpers =================
+var $ = function (id) { return document.getElementById(id); };
+function show(id) {
+  document.querySelectorAll('.screen').forEach(function (s) { s.classList.add('hidden'); });
+  $(id).classList.remove('hidden');
+  setTimeout(function () { [homeMap, searchMap, histMap, adminMap].forEach(function (m) { if (m) m.invalidateSize(); }); }, 50);
+}
+// a mushroom that fills up while waiting (pct: real progress; without it, it fills in a loop)
+var shroomN = 0;
+function shroomSvg(size, pct) {
+  var id = 'sh' + (++shroomN), h = 40;
+  var fill = pct == null
+    ? '<rect x="0" y="0" width="40" height="40" fill="#c8793a"><animate attributeName="y" values="40;0;0" keyTimes="0;.8;1" dur="1.6s" repeatCount="indefinite"/></rect>'
+    : '<rect x="0" y="' + (h - h * pct / 100) + '" width="40" height="40" fill="#c8793a"/>';
+  return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 40 40" style="vertical-align:middle">' +
+    '<defs><clipPath id="' + id + '"><path d="M4 20 Q4 4 20 4 Q36 4 36 20 Z M15 20 h10 v14 q0 3 -5 3 q-5 0 -5 -3 Z"/></clipPath></defs>' +
+    '<path d="M4 20 Q4 4 20 4 Q36 4 36 20 Z M15 20 h10 v14 q0 3 -5 3 q-5 0 -5 -3 Z" fill="#f3e6d3" stroke="#7a4a22" stroke-width="1.5"/>' +
+    '<g clip-path="url(#' + id + ')">' + fill + '</g></svg>';
+}
+function toast(msg, ms) {
+  var t = $('toast');
+  var wait = /\.\.\./.test(msg), pm = msg.match(/(\d+)%/);
+  if (wait) t.innerHTML = shroomSvg(26, pm ? +pm[1] : null) + ' ' + esc(msg); else t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(toast._t); toast._t = setTimeout(function () { t.style.display = 'none'; }, ms || 3000);
+}
+// reCAPTCHA v3 on sign-up: invisible, works once the site key is filled in (and the secret is set on the Google side)
+var RECAPTCHA_SITE_KEY = '';
+function recaptchaToken() {
+  if (!RECAPTCHA_SITE_KEY || MOCK) return Promise.resolve('');
+  return new Promise(function (ok) {
+    function run() { grecaptcha.ready(function () {
+      grecaptcha.execute(RECAPTCHA_SITE_KEY, { action:'signup' }).then(ok, function () { ok(''); }); }); }
+    if (window.grecaptcha) return run();
+    var s = document.createElement('script'); s.src = 'https://www.google.com/recaptcha/api.js?render=' + RECAPTCHA_SITE_KEY;
+    s.onload = run; s.onerror = function () { ok(''); }; document.head.appendChild(s);
+  });
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+function fmt(s) { s = Math.max(0, Math.ceil(s)); return Math.floor(s / 60) + ':' + ('0' + s % 60).slice(-2); }
+function store(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } }
+function forget(k) { try { localStorage.removeItem(k); } catch (e) {} }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[c]; }); }
+var ERRORS = { wrong_code:'הקוד שגוי', code_expired:'עדיין לא נשלח קוד. לחצו שליחה', too_many_tries:'יותר מדי ניסיונות. לחצו על שליחת הקוד שוב',
+               not_approved:'הבקשה עדיין לא אושרה', signed_out:'צריך להתחבר מחדש', blocked:'הגישה שלך הוגבלה',
+               bad_email:'המייל לא תקין', no_forest_near:'אין יער של קק"ל עד 3 ק"מ ממך. נסו כשאתם בתוך יער או לידו', map_check_failed:'שרת המפה לא ענה, ולכן לא הוגרלו תאים. נסו שוב בעוד דקה', no_room_for_test_cell:'לא נמצא מספיק שטח פתוח לידך', no_location:'אין מיקום GPS', kit_not_finished:'יש עדיין תאים פתוחים בערכה', offline:'אין קליטה כרגע', no_replacement:'לא נמצא תא מתאים להחלפה', no_cells_of_this_type:'אין ביער הזה מספיק תאים פנויים מהסוג הזה. נסו צומח אחר או "תפתיע אותי"', no_model_here:'עוד אין מודל ליער הזה', no_kit_found:'לא נמצאה קבוצת תאים קרובה. נסו פחות תאים או צומח אחר', robot_check:'בדיקת האבטחה נכשלה. נסו שוב בעוד רגע', cliff_here:'כאן תלול מדי (צוק). זזים קצת למקום מתון יותר ומנסים שוב', too_steep_near:'השטח לידך תלול מדי. נסו ממקום אחר' };
+
+// ================= API (Google, or a local mock) =================
+var session = store('session') || null;   // {email, token, access, admin, consent}
+
+function api(action, body) {
+  body = body || {}; body.action = action;
+  if (session) { body.email = body.email || session.email; body.token = session.token; }
+  if (MOCK) return Mock.call(body);
+  if (!navigator.onLine) return Promise.reject(new Error('offline'));
+  return fetch(API_URL, { method:'POST', body:JSON.stringify(body), headers:{ 'Content-Type':'text/plain;charset=utf-8' } })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.ok) {
+        if (j.error === 'signed_out' || j.error === 'blocked') { logout(); toast(ERRORS[j.error]); }
+        throw new Error(j.error);
+      }
+      return j;
+    });
+}
+function errText(e) { var m = (e && e.message) || String(e); return ERRORS[m] || ('שגיאה: ' + m); }
+
+// ================= outbox (IndexedDB: survives without reception) =================
+var db = null;
+function openDb() {
+  return new Promise(function (res, rej) {
+    var r = indexedDB.open('fungi_outbox', 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('visits', { keyPath:'visit.visit_id' }); };
+    r.onsuccess = function () { db = r.result; res(); };
+    r.onerror = function () { rej(r.error); };
+  });
+}
+function tx(mode, fn) {
+  return new Promise(function (res, rej) {
+    var t = db.transaction('visits', mode), st = t.objectStore('visits'), out = fn(st);
+    t.oncomplete = function () { res(out && out.result !== undefined ? out.result : undefined); };
+    t.onerror = function () { rej(t.error); };
+  });
+}
+function outboxAll() { return tx('readonly', function (st) { return st.getAll(); }); }
+function outboxPut(pkg) { return tx('readwrite', function (st) { st.put(pkg); }); }
+function outboxDel(id) { return tx('readwrite', function (st) { st.delete(id); }); }
+
+function refreshOutbox() {
+  return outboxAll().then(function (all) {
+    $('outboxCount').textContent = all.length;
+    $('btnOutbox').classList.toggle('hidden', all.length === 0);
+    return all;
+  });
+}
+
+var sending = false;
+function sendPackage(pkg) {
+  var obs = pkg.observations.map(function (o) {
+    var c = Object.assign({}, o); delete c.photos; return c;
+  });
+  var p = pkg.sentVisit ? Promise.resolve()
+        : api('uploadVisit', { visit:pkg.visit, observations:obs, track:pkg.track })
+            .then(function () { pkg.sentVisit = true; return outboxPut(pkg); });
+  pkg.observations.forEach(function (o) {
+    Object.keys(o.photos || {}).forEach(function (kind) {
+      p = p.then(function () {
+        if (!o.photos[kind]) return;
+        return api('uploadPhoto', { obs_id:o.obs_id, kind:kind, data:o.photos[kind].split(',')[1] })
+          .then(function () { o.photos[kind] = null; return outboxPut(pkg); });
+      });
+    });
+  });
+  return p.then(function () { return outboxDel(pkg.visit.visit_id); });
+}
+function sendOutbox(onlyAuto) {
+  if (sending || !session) return Promise.resolve();
+  sending = true;
+  return outboxAll().then(function (all) {
+    var todo = all.filter(function (p) { return !onlyAuto || p.auto; });
+    var chain = Promise.resolve(), n = 0;
+    todo.forEach(function (pkg) { chain = chain.then(function () { return sendPackage(pkg).then(function () { n++; }); }); });
+    return chain.then(function () { if (n) toast(n === 1 ? 'הביקור נשלח' : n + ' ביקורים נשלחו'); });
+  }).catch(function (e) {
+    if (!onlyAuto) toast(errText(e) + '. ננסה שוב כשתהיה קליטה');
+  }).then(function () { sending = false; refreshOutbox(); if (!$('sHome').classList.contains('hidden')) loadKit(); });
+}
+window.addEventListener('online', function () { sendOutbox(true); });
+setInterval(function () { if (navigator.onLine) sendOutbox(true); }, 60000);
+
+// ================= GPS (only while the app is open) =================
+var lastFix = null, gpsWatch = null, fixListeners = [];
+function startGps() {
+  if (gpsWatch !== null || !('geolocation' in navigator)) return;
+  gpsWatch = navigator.geolocation.watchPosition(function (pos) {
+    var c = pos.coords;
+    lastFix = { lat:c.latitude, lon:c.longitude, acc:c.accuracy, t:Date.now() };
+    fixListeners.forEach(function (f) { f(lastFix); });
+  }, function (e) {
+    if (e.code === 1) { navigator.geolocation.clearWatch(gpsWatch); gpsWatch = null;
+      toast('המיקום חסום. בכרום: ⋮ ← הגדרות ← הגדרות אתרים ← מיקום ← לאפשר לאתר הזה', 8000); }
+  }, { enableHighAccuracy:true, maximumAge:0, timeout:20000 });
+}
+
+// ================= maps =================
+var homeMap, searchMap, histMap, adminMap;
+function makeMap(id) {
+  var m = L.map(id, { zoomControl:false }).setView([32.66, 34.97], 13);
+  m.attributionControl.setPrefix(false);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+              { maxZoom:20, maxNativeZoom:19, attribution:'Esri, Maxar' }).addTo(m);
+  // a filling mushroom in the corner while map tiles load
+  var ld = L.DomUtil.create('div', '', m.getContainer());
+  ld.style.cssText = 'position:absolute;top:8px;left:8px;z-index:1000;background:rgba(255,255,255,.85);border-radius:50%;padding:4px;display:none;pointer-events:none';
+  ld.innerHTML = shroomSvg(30);
+  setTimeout(function () { m.eachLayer(function (l) {
+    if (!(l instanceof L.TileLayer)) return;
+    l.on('loading', function () { ld.style.display = 'block'; });
+    l.on('load', function () { ld.style.display = 'none'; });
+    if (l.isLoading && l.isLoading()) ld.style.display = 'block';
+  }); }, 0);
+  // place names only, on top of the photo
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+              { maxZoom:20, maxNativeZoom:19 }).addTo(m);
+  // legend behind an arrow: areas, my cell, north arrow and scale
+  var Legend = L.Control.extend({ options:{ position:'bottomleft' }, onAdd:function () {
+    var d = L.DomUtil.create('div', 'legend');
+    d.style.cssText = 'background:rgba(255,255,255,.92);color:#222;border-radius:8px;padding:4px 8px;font-size:12px;direction:rtl;box-shadow:0 1px 4px rgba(0,0,0,.3)';
+    d.innerHTML = '<div class="lgArrow" style="cursor:pointer;font-size:16px;text-align:center">▲</div>' +
+      '<div class="lgBody" style="display:none;line-height:1.7">' +
+      '<div><span style="display:inline-block;width:14px;height:10px;border:2px solid #7CFC00;margin-left:6px"></span>יער קק"ל</div>' +
+      '<div><span style="display:inline-block;width:14px;height:10px;border:2px dashed #ff9800;background:rgba(255,152,0,.3);margin-left:6px"></span>שמורת טבע (רט"ג)</div>' +
+      '<div><span style="display:inline-block;width:14px;height:10px;border:3px solid #ffd54f;margin-left:6px"></span>התא שלי</div>' +
+      '<div class="lgScale"></div></div>';
+    L.DomEvent.disableClickPropagation(d);
+    var body = d.querySelector('.lgBody'), arrow = d.querySelector('.lgArrow');
+    arrow.onclick = function () { var open = body.style.display === 'none'; body.style.display = open ? '' : 'none'; arrow.textContent = open ? '▼' : '▲'; };
+    return d;
+  } });
+  var lg = new Legend().addTo(m);
+  var sc = L.control.scale({ metric:true, imperial:false }).addTo(m);
+  lg.getContainer().querySelector('.lgScale').appendChild(sc.getContainer());
+  m._me = L.circleMarker([0, 0], { radius:7, color:'#fff', weight:2, fillColor:'#1a73e8', fillOpacity:1 });
+  m._acc = L.circle([0, 0], { radius:1, color:'#1a73e8', weight:1, fillOpacity:.12, interactive:false });
+  fixListeners.push(function (f) {
+    m._me.setLatLng([f.lat, f.lon]).addTo(m); m._acc.setLatLng([f.lat, f.lon]).setRadius(f.acc).addTo(m);
+  });
+  // button: back to my position
+  var Locate = L.Control.extend({ options:{ position:'bottomright' }, onAdd:function () {
+    var b = L.DomUtil.create('button', 'locate'); b.innerHTML = '◎'; b.title = 'המיקום שלי';
+    L.DomEvent.disableClickPropagation(b);
+    b.onclick = function () {
+      if (lastFix) { m.setView([lastFix.lat, lastFix.lon], Math.max(m.getZoom(), 17)); return; }
+      toast('מחפש מיקום...');
+      // a tap lets the browser ask for the permission again if it was missed
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        var c = pos.coords; lastFix = { lat:c.latitude, lon:c.longitude, acc:c.accuracy, t:Date.now() };
+        fixListeners.forEach(function (f) { f(lastFix); });
+        m.setView([lastFix.lat, lastFix.lon], 17); startGps();
+      }, function (e) {
+        toast(e.code === 1 ? 'המיקום חסום. בכרום: ⋮ ← הגדרות ← הגדרות אתרים ← מיקום ← לאפשר לאתר הזה'
+                           : 'אין קליטת GPS כרגע. כדאי לצאת לשטח פתוח ולנסות שוב', 8000);
+      }, { enableHighAccuracy:true, timeout:20000, maximumAge:0 });
+    };
+    return b;
+  } });
+  new Locate().addTo(m);
+  addContours(m);
+  return m;
+}
+function cellPolygon(c, style) { return L.polygon(c.corners, style); }
+// ================= contour lines, carried on the phone (tools\build_contours.py) =================
+// contours.json: [[elevation, [[lat, lon], ...]], ...], every 10 m, inside KKL / RTG areas from Be'er Sheva northward
+var CONTOURS = null, contoursLoading = null, contoursOn = true;
+try { contoursOn = localStorage.getItem('contours') !== '0'; } catch (e) {}
+function loadContours() {
+  if (!contoursLoading) contoursLoading = fetch('contours.json').then(function (r) { return r.json(); }).then(function (a) {
+    CONTOURS = a.map(function (l) {
+      var b = [90, 180, -90, -180];
+      l[1].forEach(function (p) { b[0] = Math.min(b[0], p[0]); b[1] = Math.min(b[1], p[1]); b[2] = Math.max(b[2], p[0]); b[3] = Math.max(b[3], p[1]); });
+      return { e:l[0], pts:l[1], b:b };
+    });
+    return CONTOURS;
+  }).catch(function () { contoursLoading = null; return null; });
+  return contoursLoading;
+}
+function addContours(m) {
+  var group = L.layerGroup().addTo(m), rnd = L.canvas({ padding:0.2 });
+  function redraw() {
+    group.clearLayers();
+    if (!contoursOn || !CONTOURS || m.getZoom() < 14) return;   // zoomed out: too many lines to read anyway
+    var v = m.getBounds().pad(0.2), s = v.getSouth(), n = v.getNorth(), w = v.getWest(), e = v.getEast();
+    CONTOURS.forEach(function (l) {
+      if (l.b[2] < s || l.b[0] > n || l.b[3] < w || l.b[1] > e) return;
+      var major = l.e % 50 === 0;
+      var pl = L.polyline(l.pts, { renderer:rnd, color:major ? '#ffe9b0' : '#fff3d6', weight:major ? 1.8 : 0.9,
+                                   opacity:major ? 0.9 : 0.6, interactive:major });
+      if (major) pl.bindTooltip(l.e + ' מ\'', { sticky:true });
+      group.addLayer(pl);
+    });
+  }
+  m.on('moveend', redraw);
+  m._redrawContours = redraw;
+  var Btn = L.Control.extend({ options:{ position:'bottomright' }, onAdd:function () {
+    var b = L.DomUtil.create('button', 'locate'); b.innerHTML = '⛰'; b.title = 'קווי גובה';
+    b.style.opacity = contoursOn ? 1 : 0.5;
+    L.DomEvent.disableClickPropagation(b);
+    b.onclick = function () {
+      contoursOn = !contoursOn; try { localStorage.setItem('contours', contoursOn ? '1' : '0'); } catch (e) {}
+      document.querySelectorAll('.locate').forEach(function (x) { if (x.innerHTML === '⛰') x.style.opacity = contoursOn ? 1 : 0.5; });
+      [homeMap, searchMap, histMap, adminMap].forEach(function (mm) { if (mm && mm._redrawContours) mm._redrawContours(); });
+      if (contoursOn && m.getZoom() < 14) toast('קווי הגובה מופיעים כשמתקרבים במפה');
+    };
+    return b;
+  } });
+  new Btn().addTo(m);
+  loadContours().then(redraw);
+}
+var shroomLayers = [];   // a small mushroom where each observation was photographed
+function shroomMarker(lat, lon) {
+  return L.marker([lat, lon], { interactive:false, keyboard:false,
+    icon:L.divIcon({ className:'shroom', html:'🍄', iconSize:[15, 15], iconAnchor:[7, 7] }) });
+}
+
+// ================= KKL forests and Nature and Parks Authority (RTG) areas, carried on the phone =================
+// areas.json (tools\compact_layers.js): [{ n: name, k: 'kkl' | 'rtg', r: [[[lat, lon], ...], ...] }]
+var AREAS = null, areasLoading = null;
+function loadAreas() {
+  if (!areasLoading) areasLoading = fetch('areas.json').then(function (r) { return r.json(); }).then(function (a) {
+    a.forEach(function (x) {   // bounding box per area, so a point test only looks at the few areas around it
+      var b = [90, 180, -90, -180];
+      x.r.forEach(function (ring) { ring.forEach(function (p) {
+        b[0] = Math.min(b[0], p[0]); b[1] = Math.min(b[1], p[1]); b[2] = Math.max(b[2], p[0]); b[3] = Math.max(b[3], p[1]); }); });
+      x.b = b;
+    });
+    AREAS = a; return a;
+  }).catch(function () { areasLoading = null; return null; });
+  return areasLoading;
+}
+function inArea(x, lat, lon) {   // even-odd over all rings of one area (holes count out)
+  if (lat < x.b[0] || lat > x.b[2] || lon < x.b[1] || lon > x.b[3]) return false;
+  var n = 0; x.r.forEach(function (ring) { if (insidePoly(lat, lon, ring)) n++; });
+  return n % 2 === 1;
+}
+function areaAt(lat, lon) {   // { kkl: forest name or null, rtg: true / false }
+  var o = { kkl:null, rtg:false };
+  (AREAS || []).forEach(function (x) {
+    if ((x.k === 'kkl' && o.kkl === null) || (x.k === 'rtg' && !o.rtg)) if (inArea(x, lat, lon)) { if (x.k === 'kkl') o.kkl = x.n || 'יער קק"ל'; else o.rtg = true; }
+  });
+  return o;
+}
+var OPEN_RTG = true;   // nature reserves (RTG) open to everyone in this package; false = experts only
+function rtgOpen() { return OPEN_RTG || isExpert(); }
+function isExpert() { return session && (session.role === 'expert' || session.admin); }
+// may this person search here? citizens: inside KKL and not in an RTG area (no leaving the trails there)
+function pointOk(lat, lon) {
+  var a = areaAt(lat, lon);
+  return rtgOpen() ? (!!a.kkl || a.rtg) : (!!a.kkl && !a.rtg);
+}
+function cellOk(lat, lon) {   // the whole 60 m cell: centre and 4 corners
+  var dy = 30 / M_LAT, dx = 30 / mLon(lat);
+  return [[0, 0], [1, 1], [1, -1], [-1, 1], [-1, -1]].every(function (s) { return pointOk(lat + s[0] * dy, lon + s[1] * dx); });
+}
+var RTG_WHY = 'זה שטח בניהול רשות הטבע והגנים. בשמורות טבע אסור לרדת מהשבילים, ולכן funGISc לא שולחת לכאן מחפשים. ' +
+              'סוקרים מומחים מגיעים לכאן בתיאום ובאישור מיוחד.';
+var areaLayers = [], areaCanvas_ = null;
+function areaCanvas() { return areaCanvas_ || (areaCanvas_ = L.canvas({ padding:0.3 })); }   // many vertices: canvas is much faster than SVG
+function drawAreas(m) {
+  loadAreas().then(function (a) {
+    if (!a || m._areasDrawn) return; m._areasDrawn = true;
+    a.forEach(function (x) {
+      var p = L.polygon(x.r, x.k === 'kkl'
+        ? { renderer:areaCanvas(), color:'#7CFC00', weight:1.5, fillOpacity:0.04 }
+        : { renderer:areaCanvas(), color:'#ff9800', weight:2, fillColor:'#ff9800', fillOpacity:rtgOpen() ? 0.05 : 0.18, dashArray:'6 4' });
+      p.bindPopup(x.k === 'kkl' ? '<b>' + esc(x.n || 'יער קק"ל') + '</b><br>יער קק"ל' :
+        '<b>שטח רט"ג</b><br>' + (OPEN_RTG ? 'פתוח לחיפוש. בשמורת טבע הולכים בזהירות ושומרים על הטבע' : isExpert() ? 'פתוח לסוקרים מומחים בלבד' : RTG_WHY));
+      p.addTo(m); areaLayers.push(p);
+    });
+    m.eachLayer(function (l) { if (l.bringToFront && kitLayers.indexOf(l) >= 0) l.bringToFront(); });
+  });
+}
+
+// ================= 1. login =================
+function startLogin() {
+  show('sLogin');
+  var pend = store('pendingEmail');
+  if (pend) { $('loginEmail').value = pend; $('loginCodeBox').classList.remove('hidden'); }
+}
+$('btnRequest').onclick = function () {
+  var email = $('loginEmail').value.trim().toLowerCase();
+  if (!/^\S+@\S+\.\S+$/.test(email)) { $('loginMsg').textContent = 'המייל לא תקין'; return; }
+  $('btnRequest').disabled = true; $('loginMsg').textContent = '';
+  recaptchaToken().then(function (tok) { return api('requestJoin', { email:email, recaptcha:tok }); }).then(function (r) {
+    store('pendingEmail', email);
+    $('loginPending').classList.toggle('hidden', r.state !== 'pending');
+    $('loginCodeBox').classList.remove('hidden');
+    if (r.state === 'code_sent') $('loginMsg').textContent = 'קוד הכניסה נשלח למייל ' + email + (MOCK ? ' (בדיקה: 123456)' : '');
+    if (r.state === 'blocked') $('loginMsg').textContent = ERRORS.blocked;
+  }).catch(function (e) { $('loginMsg').textContent = errText(e); })
+    .then(function () { $('btnRequest').disabled = false; });
+};
+$('btnResend').onclick = $('btnRequest').onclick;
+$('btnVerify').onclick = function () {
+  var email = $('loginEmail').value.trim().toLowerCase();
+  api('verifyCode', { email:email, code:$('loginCode').value }).then(function (r) {
+    session = { email:r.email, token:r.token, access:r.access, admin:r.admin, consent:r.consent };
+    store('session', session); forget('pendingEmail');
+    afterLogin();
+  }).catch(function (e) { $('loginMsg').textContent = errText(e); });
+};
+function logout() { session = null; forget('session'); startLogin(); }
+$('mLogout').onclick = function () { if (confirm('להתנתק?')) logout(); };
+
+// ================= 2. consent =================
+$('chkConsent').onchange = function () { $('btnConsent').disabled = !this.checked; };
+$('btnConsent').onclick = function () {
+  api('consent').then(function () {
+    session.consent = true; store('session', session);
+    startGps(); goHome(true);
+  }).catch(function (e) { toast(errText(e)); });
+};
+function afterLogin() {
+  if (!session.consent) { show('sConsent'); return; }
+  startGps(); goHome(!hasOpenKit());   // the choice only when there is no open kit (coming back from navigation keeps the kit)
+  api('me').then(function (r) { session.access = r.access; session.admin = r.admin; session.role = r.role; store('session', session);
+    $('mAdmin').classList.toggle('hidden', !r.admin); }).catch(function () {});
+}
+
+// ================= 3. home =================
+var kit = store('kit') || { cells:[] }, kitLayers = [];
+var visitedIds = store('visitedIds') || {};   // cells reported from this phone (also while still in the outbox)
+
+var choosing = false;   // the choice screen is shown instead of the kit
+function hasOpenKit() { return !!(kit.cells && kit.cells.some(function (c) { return !(visitedIds[c.id] || c.done); })); }
+function goHome(withChoice) {
+  choosing = !!withChoice;
+  show('sHome');
+  var dr = store('draft'); $('btnDraft').classList.toggle('hidden', !(dr && dr.parked));
+  $('mAdmin').classList.toggle('hidden', !session.admin); $('mDash').classList.toggle('hidden', !session.admin);
+  $('mTestKit').classList.remove('hidden');
+  if (!homeMap) { homeMap = makeMap('homeMap'); drawAreas(homeMap); }
+  refreshOutbox(); drawKit();
+  if (!kit.expert_day) loadKit();   // an expert field day lives on the phone; the server kit must not replace it
+}
+// ---- expert field day: the blind list code 3 handed out; nothing is drawn here ----
+function prepExpertDay() {
+  toast('מוריד את יום השטח...', 20000);
+  api('expertDay').then(function (r) {
+    if (kit.expert_day !== r.day) { visitedIds = {}; store('visitedIds', visitedIds); }
+    kit = { expert_day: r.day, cells: r.cells }; store('kit', kit);
+    choosing = false; drawKit();
+    var b = [90, 180, -90, -180];
+    r.cells.forEach(function (c) { b = [Math.min(b[0], c.center[0]), Math.min(b[1], c.center[1]), Math.max(b[2], c.center[0]), Math.max(b[3], c.center[1])]; });
+    toast('יום ' + r.day + ' נשמר בטלפון: ' + r.cells.length + ' תאים', 5000);
+    setTimeout(function () { saveForestMap('expert', 'יום השטח', b); }, 800);
+  }).catch(function (e) { toast(e.message === 'experts_only' ? 'יום שטח פתוח רק למומחים' : errText(e), 6000); });
+}
+function loadKit() {
+  return api('kit').then(function (r) { kit = r; store('kit', r); drawKit(); })
+    .catch(function () { /* offline: keep the kit stored on the phone */ });
+}
+function drawKit() {
+  if (choosing) { showChoice(); return; }
+  kitLayers.forEach(function (l) { homeMap.removeLayer(l); }); kitLayers = [];
+  var sheet = $('homeSheet'), html = '';
+  if (!kit.cells || !kit.cells.length) {
+    showChoice(); return;
+  }
+  var bounds = L.latLngBounds([]);
+  kit.cells.forEach(function (c, i) {
+    var done = visitedIds[c.id] || c.done;
+    var poly = cellPolygon(c, { color: done ? '#d0d0d0' : '#ffd54f', weight:3, fillOpacity:.15 }).addTo(homeMap);
+    var name = kit.expert_day ? c.id : String(i + 1);
+    poly.bindTooltip(name, { permanent:true, direction:'center', className:'' });
+    kitLayers.push(poly); bounds.extend(poly.getBounds());
+    if (kit.expert_day && c.optional && !(kit.cells[i - 1] || {}).optional) html += '<p class="muted" style="margin:10px 0 4px">רק אם נשאר זמן: תאים בחלקות</p>';
+    html += '<div class="cellrow"><div class="num" style="' + (done ? 'background:#888' : '') + '">' + (kit.expert_day ? c.walk : i + 1) + '</div>' +
+      '<div class="grow">תא ' + name + (done ? ' · <span class="muted">דווח</span>' : '') +
+      (c.slope >= STEEP_DEG ? '<br><span style="color:#b3261e;font-weight:700">⚠ שיפוע תלול, כ-' + Math.round(c.slope) + '°. זהירות</span>' : '') +
+      '<br><a href="https://www.google.com/maps/dir/?api=1&destination=' + c.center[0] + ',' + c.center[1] +
+      '" target="_blank">ניווט לתא</a></div>' +
+      (done ? '' : kit.expert_day ? '<button class="small" data-go="' + i + '">הגעתי</button>' : repFor === c.id
+        ? '<button class="small" data-rs="' + c.id + '">⛰ שיפוע מסוכן</button>' +
+          '<button class="small second" data-ro="' + c.id + '">סיבה אחרת</button>' +
+          '<button class="small second" data-rc="1">ביטול</button>'
+        : '<button class="small second" data-rep="' + c.id + '">החלפה</button>' +
+          '<button class="small" data-go="' + i + '">הגעתי</button>') + '</div>';
+  });
+  var allDone = kit.cells.every(function (c) { return visitedIds[c.id] || c.done; });
+  if (allDone) html += '<p style="margin-top:10px">סיימת את כל התאים. תודה!</p><button id="btnDraw">ערכה חדשה</button>';
+  else html += '<button class="second small" id="btnOtherKit" style="margin-top:10px">איפה מחפשים היום?</button>';
+  sheet.innerHTML = html;
+  if (allDone) $('btnDraw').onclick = function () { choosing = true; showChoice(); };
+  else $('btnOtherKit').onclick = function () { choosing = true; showChoice(); };
+  sheet.querySelectorAll('[data-go]').forEach(function (b) { b.onclick = function () { var k = Number(b.dataset.go); arrive(kit.cells[k], kit.expert_day ? kit.cells[k].id : k + 1); }; });
+  sheet.querySelectorAll('[data-rep]').forEach(function (b) { b.onclick = function () { repFor = b.dataset.rep; drawKit(); }; });
+  sheet.querySelectorAll('[data-rs]').forEach(function (b) { b.onclick = function () { replaceCell(b.dataset.rs, 'slope'); }; });
+  sheet.querySelectorAll('[data-ro]').forEach(function (b) { b.onclick = function () { replaceCell(b.dataset.ro); }; });
+  sheet.querySelectorAll('[data-rc]').forEach(function (b) { b.onclick = function () { repFor = null; drawKit(); }; });
+  if (bounds.isValid()) homeMap.fitBounds(bounds.pad(0.3));
+}
+// ---- model kits: Carmel model, or the country model per KKL forest (models_index.json, no hidden levels in it) ----
+// vegetation (VegCover Israel 2023/24, Unterman, Levin & Moses, Hebrew University; app by Keren Gold)
+var VEG = ['', '🌳 אלונים', '🌲 אורנים', '🌳🌿 מעורב', '🌿 שיחים', '🌾 בתה'];
+var CARMEL_VEG_N = { 1: 231, 2: 1461, 3: 441, 5: 297 };   // Carmel citizen cells per class
+var CARMEL_BOX = [32.6158, 34.9582, 32.6640, 35.0042];      // the Carmel model wins inside (with a margin)
+var MODELS = null, modelsLoading = null;
+function loadModels() {
+  if (!modelsLoading) modelsLoading = fetch('models_index.json').then(function (r) { return r.json(); })
+    .then(function (a) { MODELS = a; return a; }).catch(function () { modelsLoading = null; return null; });
+  return modelsLoading;
+}
+function inCarmelModel(lat, lon) { return false; }   // the Hof HaCarmel model is not part of this package
+function hereForest() {
+  if (!lastFix) { toast('מחכה למיקום GPS... לחצו על ◎ במפה'); return; }
+  if (inCarmelModel(lastFix.lat, lastFix.lon)) { modelOptions('carmel', 'אזור כרמל'); return; }
+  Promise.all([loadAreas(), loadModels()]).then(function () {
+    var name = AREAS && areaAt(lastFix.lat, lastFix.lon).kkl;
+    var f = name && MODELS && MODELS.filter(function (m) { return m.n === name; })[0];
+    if (!f && MODELS) {   // not inside a forest: the closest one within 3 km
+      var best = null, bd = 3000;
+      MODELS.forEach(function (m) { var d = Math.hypot((m.lat - lastFix.lat) * M_LAT, (m.lon - lastFix.lon) * mLon(lastFix.lat)); if (d < bd) { bd = d; best = m; } });
+      f = best;
+    }
+    if (!f) { toast('לא מצאתי יער עם מודל לידך. אפשר לבחור יער מהרשימה', 7000); return; }
+    modelOptions(f.f, f.n, f.v);
+  });
+}
+function pickForest() {
+  loadModels().then(function (a) {
+    if (!a) { toast('רשימת היערות עוד לא נשמרה בטלפון. נסו כשיש קליטה'); return; }
+    $('homeSheet').innerHTML = '<h2 style="margin-bottom:6px">בחירת יער</h2>' +
+      '<input id="forestQ" placeholder="שם היער, למשל ביריה" style="width:100%">' +
+      '<div id="forestList" style="max-height:45vh;overflow:auto;margin-top:6px"></div>' +
+      '<button class="second" id="btnFBack">חזרה</button>';
+    function list() {
+      var q = $('forestQ').value.trim();
+      var hits = a.filter(function (m) { return !q || m.n.indexOf(q) >= 0; }).sort(function (x, y) { return x.n < y.n ? -1 : 1; });
+      $('forestList').innerHTML = hits.slice(0, 60).map(function (m, i) { return '<button class="second" data-fi="' + i + '">' + m.n + '</button>'; }).join('') ||
+        '<p class="muted">לא נמצא יער בשם הזה</p>';
+      $('forestList').querySelectorAll('[data-fi]').forEach(function (b) {
+        b.onclick = function () { var m = hits[+b.dataset.fi]; modelOptions(m.f, m.n, m.v); };
+      });
+    }
+    $('forestQ').oninput = list; list();
+    $('btnFBack').onclick = showChoice;
+  });
+}
+// ---- save the photo map + place names of a forest (with a 500 m buffer) so it works without reception ----
+var TILE_URLS = ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/',
+                 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/'];
+function forestBox(model, name) {
+  if (model === 'carmel') return CARMEL_BOX.slice();
+  var b = [90, 180, -90, -180];
+  function walk(p) { if (typeof p[0] === 'number') { b[0] = Math.min(b[0], p[0]); b[1] = Math.min(b[1], p[1]); b[2] = Math.max(b[2], p[0]); b[3] = Math.max(b[3], p[1]); } else p.forEach(walk); }
+  (AREAS || []).forEach(function (x) { if (x.k === 'kkl' && x.n === name) walk(x.r); });
+  if (b[0] > b[2]) {   // no polygon by that name: 2 km around the forest point
+    var m = (MODELS || []).filter(function (x) { return x.f === model; })[0]; if (!m) return null;
+    b = [m.lat - 0.018, m.lon - 0.021, m.lat + 0.018, m.lon + 0.021];
+  }
+  return b;
+}
+function tileList(b, zMax) {
+  var buf = 0.0045, out = [];   // ~500 m
+  function tx(lon, z) { return Math.floor((lon + 180) / 360 * Math.pow(2, z)); }
+  function ty(lat, z) { var r = lat * Math.PI / 180; return Math.floor((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * Math.pow(2, z)); }
+  for (var z = 11; z <= zMax; z++)
+    for (var x = tx(b[1] - buf * 1.2, z); x <= tx(b[3] + buf * 1.2, z); x++)
+      for (var y = ty(b[2] + buf, z); y <= ty(b[0] - buf, z); y++) out.push(z + '/' + y + '/' + x);
+  return out;
+}
+function saveForestMap(model, name, box) {
+  Promise.all([loadAreas(), loadModels()]).then(function () {
+    var b = box || forestBox(model, name); if (!b) { toast('לא מצאתי את גבולות היער'); return; }
+    var zMax = 17, t = tileList(b, zMax);
+    while (t.length > 4000 && zMax > 15) t = tileList(b, --zMax);   // a big forest: less detail, not tens of thousands of tiles
+    var mb = Math.round(t.length * 2 * 15 / 1024);
+    if (!confirm('לשמור את מפת ' + name + ' לשימוש בלי קליטה? בערך ' + mb + ' MB. כדאי בוויפיי.')) return;
+    var urls = []; t.forEach(function (k) { TILE_URLS.forEach(function (u) { urls.push(u + k); }); });
+    var done = 0, fail = 0, i = 0;
+    function next() {
+      if (i >= urls.length) return Promise.resolve();
+      var u = urls[i++];
+      return fetch(u, { mode:'no-cors' }).catch(function () { fail++; }).then(function () {
+        done++; if (done % 100 === 0) toast('שומר מפה... ' + Math.round(100 * done / urls.length) + '%');
+        return next();
+      });
+    }
+    Promise.all([next(), next(), next(), next(), next(), next()]).then(function () {
+      toast(fail ? 'נשמר חלקית (' + fail + ' חלקים חסרים). נסו שוב כשיש קליטה טובה' : 'מפת ' + name + ' נשמרה בטלפון', 7000);
+    });
+  });
+}
+// the forest is chosen: which vegetation (only what this forest has) and how many cells
+function modelOptions(model, name, counts) {
+  if (model === 'carmel') counts = CARMEL_VEG_N;
+  var veg = 0, n = 3;
+  var kinds = [1, 2, 3, 4, 5].filter(function (k) { return (counts && counts[k]) >= 3; });
+  $('homeSheet').innerHTML = '<h2 style="margin-bottom:6px">' + name + '</h2>' +
+    '<b>איזה צומח?</b><div id="vegChips" style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">' +
+    kinds.map(function (k) { return '<button class="second chip" data-v="' + k + '" style="width:auto">' + VEG[k] + '</button>'; }).join('') +
+    '<button class="chip" data-v="0" style="width:auto">🎲 תפתיע אותי</button></div>' +
+    '<b>כמה תאים?</b><div id="nChips" style="display:flex;gap:6px;margin:6px 0">' +
+    [3, 6, 9].map(function (k) { return '<button class="' + (k === 3 ? '' : 'second ') + 'chip" data-n="' + k + '" style="width:auto">' + k + '</button>'; }).join('') + '</div>' +
+    '<p class="muted" style="font-size:12px;margin:2px 0 8px">חם, בינוני וקר בחלקים שווים (לא רואים מי מי). ' +
+    '</p><p class="muted" style="font-size:11px;margin:0 0 8px">נתוני הצומח נלקחו מפרויקט VegCover Israel</p>' +
+    '<button id="btnDrawModel">הגרל תאים</button>' +
+    '<button class="second" id="btnMBack">חזרה</button>';
+  function pickChip(box, attr, set) {
+    $(box).querySelectorAll('[' + attr + ']').forEach(function (b) {
+      b.onclick = function () {
+        $(box).querySelectorAll('[' + attr + ']').forEach(function (x) { x.classList.add('second'); });
+        b.classList.remove('second'); set(+b.getAttribute(attr));
+      };
+    });
+  }
+  pickChip('vegChips', 'data-v', function (v) { veg = v; });
+  pickChip('nChips', 'data-n', function (v) { n = v; });
+  $('btnMBack').onclick = showChoice;
+  $('btnDrawModel').onclick = function () { newKit({ model: model, veg: veg, n: n }, name); };
+}
+function newKit(opt, forestName) {
+  choosing = false;
+  toast('מגריל תאים...', 20000);
+  api('drawKit', opt || {}).then(function (r) {
+      kit = r; store('kit', r); visitedIds = {}; store('visitedIds', visitedIds); drawKit();
+      toast('נוצרו ' + r.cells.length + ' תאים. הם שמורים בטלפון וזמינים גם בלי קליטה', 6000);
+      if (opt && opt.model) setTimeout(function () { saveForestMap(opt.model, forestName); }, 800);   // offer the forest map right after the draw
+    })
+    .catch(function (e) {
+      choosing = true;
+      if (e.message === 'kit_not_finished') { toast('חלק מהביקורים עדיין ממתינים לשליחה. שלחו אותם קודם'); return; }
+      toast(errText(e));
+    });
+}
+var repFor = null;   // the cell whose replace choices are open
+function replaceCell(id, reason) {
+  if (!reason) reason = prompt('למה להחליף את התא? (למשל: לא נגיש, רחוק מדי, שטח סגור)');
+  if (reason === null) return;
+  repFor = null;
+  api('replaceCell', { cell_id:id, reason:reason }).then(function (r) {
+    kit = r; store('kit', r); drawKit();
+    toast(reason === 'slope' ? 'התא הוחלף בתא הקרוב ביותר שפחות תלול' : 'התא הוחלף');
+  }).catch(function (e) { drawKit(); toast(errText(e)); });
+}
+$('btnMenu').onclick = function () { $('menu').classList.toggle('hidden'); };
+$('btnOutbox').onclick = function () {
+  if (confirm('לשלוח עכשיו את כל מה שממתין?')) { toast('שולח...'); sendOutbox(false); }
+};
+
+// ================= 4. arrival =================
+var visit = null;   // the visit in progress
+function arrive(cell, num) {
+  var d = store('draft');
+  if (d && d.parked && !confirm('יש ביקור בתא ' + d.num + ' שמור בטיוטות. להתחיל ביקור חדש ולמחוק אותו?')) return;
+  visit = { cell:cell, num:num, quality:null, observations:[], track:[] };
+  $('arriveTitle').textContent = 'הגעתי לתא ' + num;
+  if (cell.slope >= STEEP_DEG) toast('⚠ התא תלול (כ-' + Math.round(cell.slope) + '°). הולכים בזהירות, ואם לא בטוח לא נכנסים', 8000);
+  $('minutesTxt').textContent = SEARCH_MINUTES;
+  var r = $('rate'); r.innerHTML = '';
+  [1, 2, 3, 4, 5].forEach(function (q) {
+    var b = document.createElement('button'); b.textContent = q;
+    b.onclick = function () { visit.quality = q; r.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); }); $('btnStart').disabled = false; };
+    r.appendChild(b);
+  });
+  $('btnStart').disabled = true;
+  show('sArrive'); $('menu').classList.add('hidden');
+}
+$('btnArriveBack').onclick = goHome;
+
+// ================= 5. search =================
+var audio = null, wakeLock = null, tick = null, endTime = 0, running = false;
+var outsideRun = 0, isOutside = false, lastAlertT = 0, lastTrackT = 0, trackLine = null, cellLayer = null;
+var M_LAT = 110574;
+function mLon(lat) { return 111320 * Math.cos(lat * Math.PI / 180); }
+function insidePoly(lat, lon, pts) {   // ray casting on lat/lon
+  var inside = false;
+  for (var i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    var yi = pts[i][0], xi = pts[i][1], yj = pts[j][0], xj = pts[j][1];
+    if (((yi > lat) !== (yj > lat)) && (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi)) inside = !inside;
+  }
+  return inside;
+}
+function distOutside(lat, lon, pts) {   // metres from the cell edge (0 inside)
+  if (insidePoly(lat, lon, pts)) return 0;
+  var k = mLon(lat), best = Infinity;
+  for (var i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+    var ax = (pts[j][1] - lon) * k, ay = (pts[j][0] - lat) * M_LAT, bx = (pts[i][1] - lon) * k, by = (pts[i][0] - lat) * M_LAT;
+    var dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / (dx * dx + dy * dy)));
+    best = Math.min(best, Math.hypot(ax + t * dx, ay + t * dy));
+  }
+  return best;
+}
+// soft chimes: a bell-like note (soft attack, long fade) instead of a hard beep
+function chime(notes, gap, wave) {
+  if (!audio) return;
+  notes.forEach(function (f, i) {
+    if (!f) return;   // 0 = a rest
+    var t0 = audio.currentTime + i * (gap || 0.22);
+    [1, 2].forEach(function (h) {   // the note and a quiet octave give a bell colour
+      var o = audio.createOscillator(), g = audio.createGain();
+      o.type = wave || 'sine'; o.frequency.value = f * h; o.connect(g); g.connect(audio.destination);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(h === 1 ? 0.28 : 0.06, t0 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.9);
+      o.start(t0); o.stop(t0 + 0.95);
+    });
+  });
+}
+// place (leaving the cell) = high bell; time (offer to stop, time is up) = low soft 'ding-dong' in a different colour
+var SOUND = { start:[523, 659], exit:[880, 698],
+              offer:[392, 330, 392], end:[392, 330, 392, 0, 392, 330, 523], shutter:[1047],
+              tock:[1568], win:[523, 659, 784, 0, 659, 1047, 1047] };
+var WAVE = { offer:'triangle', end:'triangle', tock:'square' };
+// full 20 minutes with fungi: clock ticks in the last 3 seconds, then a victory tune and confetti
+var lastTock = -1;
+function finalCountdown(left) {
+  if (left > 3 || left <= 0 || !fungiFound()) return;
+  var s = Math.ceil(left); if (s === lastTock) return; lastTock = s; beep('tock'); buzz([40]);
+}
+function celebrate() {
+  var box = $('celebrate'), cols = ['#ffd54f', '#e53935', '#43a047', '#1e88e5', '#8e24aa', '#fb8c00'];
+  box.querySelectorAll('i').forEach(function (x) { x.remove(); });
+  for (var i = 0; i < 120; i++) {
+    var c = document.createElement('i');
+    c.style.left = Math.random() * 100 + 'vw'; c.style.background = cols[i % cols.length];
+    c.style.animationDuration = (2 + Math.random() * 2.5) + 's'; c.style.animationDelay = Math.random() * 0.8 + 's';
+    box.appendChild(c);
+  }
+  box.style.display = 'block';
+  setTimeout(function () { box.style.display = 'none'; }, 5000);
+}
+function beep(kind) { chime(SOUND[kind].filter(Boolean).length ? SOUND[kind] : [], kind === 'shutter' ? 0.1 : (WAVE[kind] ? 0.42 : 0.25), WAVE[kind]); }
+function buzz(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+function keepAwake() {
+  if ('wakeLock' in navigator) navigator.wakeLock.request('screen').then(function (w) { wakeLock = w; }).catch(function () {});
+}
+document.addEventListener('visibilitychange', function () { if (running && document.visibilityState === 'visible') keepAwake(); });
+
+$('btnStart').onclick = function () {
+  audio = audio || new (window.AudioContext || window.webkitAudioContext)(); audio.resume();
+  beep('start'); keepAwake();
+  visit.visit_id = uid(); visit.start = Date.now(); endTime = visit.start + SEARCH_MINUTES * 60000;
+  outsideRun = 0; isOutside = false; lastTrackT = 0; running = true; offered = {};
+  $('earlyBox').classList.add('hidden');
+  show('sSearch');
+  if (!searchMap) { searchMap = makeMap('searchMap'); trackLine = L.polyline([], { color:'#ff5252', weight:4 }).addTo(searchMap); }
+  if (cellLayer) searchMap.removeLayer(cellLayer);
+  cellLayer = cellPolygon(visit.cell, { color:'#ffd54f', weight:4, fillOpacity:.1 }).addTo(searchMap);
+  searchMap.fitBounds(cellLayer.getBounds().pad(0.6));
+  trackLine.setLatLngs([]); lastTock = -1;
+  shroomLayers.forEach(function (l) { searchMap.removeLayer(l); }); shroomLayers = [];
+  $('obsCount').textContent = '0 תצפיות';
+  clearInterval(tick);
+  tick = setInterval(function () {
+    var left = (endTime - Date.now()) / 1000;
+    $('timer').textContent = fmt(left);
+    finalCountdown(left);
+    if (left <= 0) endSearch(true); else offerEarlyEnd();
+  }, 250);
+  saveDraft();
+};
+fixListeners.push(function (f) {
+  if (!running || !visit) return;
+  var d = distOutside(f.lat, f.lon, visit.cell.corners);
+  if (f.acc <= MAX_ACCURACY_M) outsideRun = d > EXIT_BUFFER_M ? outsideRun + 1 : 0;
+  isOutside = outsideRun >= EXIT_FIXES;
+  $('exitAlert').style.display = isOutside ? 'block' : 'none';
+  if (isOutside && Date.now() - lastAlertT >= ALERT_REPEAT_S * 1000) { lastAlertT = Date.now(); beep('exit'); buzz([200, 120, 200]); }
+  $('searchStatus').textContent = 'דיוק GPS ' + Math.round(f.acc) + ' מ\' · ' + (d === 0 ? 'בתוך התא' : Math.round(d) + ' מ\' מחוץ לתא');
+  if (f.t - lastTrackT >= TRACK_EVERY_S * 1000) {
+    lastTrackT = f.t;
+    visit.track.push({ t:f.t, lat:+f.lat.toFixed(7), lon:+f.lon.toFixed(7), acc:Math.round(f.acc * 10) / 10, d:Math.round(d * 10) / 10, alert:isOutside ? 1 : 0 });
+    trackLine.addLatLng([f.lat, f.lon]);
+    if (visit.track.length % 15 === 0) saveDraft();
+  }
+});
+// offer to stop early, same proportions as the plot protocol (30 min -> 20 if nothing, 25 if fewer than 5):
+// nothing after 13 of 20 min, fewer than 5 fungi after 17 of 20 min
+var EARLY_RULES = [{ min:13, max:0, msg:'13 דקות בלי פטריות. לסיים את התא?' },
+                   { min:17, max:4, msg:'17 דקות ופחות מ-5 פטריות. לסיים את התא?' }];
+var offered = {};
+function fungiFound() { return visit.observations.reduce(function (s, o) { return s + (Number(o.count) || 0); }, 0); }
+function offerEarlyEnd() {
+  var mins = (Date.now() - visit.start) / 60000;
+  EARLY_RULES.forEach(function (r, i) {
+    if (offered[i] || mins < r.min || fungiFound() > r.max) return;
+    offered[i] = true;
+    $('earlyMsg').textContent = r.msg; $('earlyBox').classList.remove('hidden');
+    beep('offer'); buzz([250]);
+  });
+}
+$('btnEarlyEnd').onclick = function () { $('earlyBox').classList.add('hidden'); visit.early_end = 1; endSearch(false); };
+$('btnEarlyGo').onclick = function () { $('earlyBox').classList.add('hidden'); };
+$('btnFinish').onclick = function () { if (confirm('לסיים את החיפוש לפני הזמן?')) endSearch(false); };
+
+function endSearch(timeUp) {
+  running = false; clearInterval(tick);
+  if (wakeLock) { wakeLock.release().catch(function () {}); wakeLock = null; }
+  $('exitAlert').style.display = 'none';
+  if (timeUp && fungiFound()) { setTimeout(function () { beep('win'); }, 600); buzz([100, 60, 100, 60, 300]); celebrate(); }
+  else if (timeUp) { beep('end'); buzz([300, 150, 300]); }
+  visit.end = Date.now();
+  saveDraft();
+  showEnd(timeUp);
+}
+
+// draft: if the phone restarts in the middle, the visit is not lost
+function saveDraft() { if (visit) store('draft', visit); }
+
+// ================= 6. observation: one question per page =================
+var obs = null, camStream = null, step = 0;
+var STEPS = [
+  { kind:'photo', shot:'top',     title:'צלמו את הפטרייה מלמעלה' },
+  { kind:'photo', shot:'under',   title:'צלמו את הפטרייה מלמטה', note:'את החלק התחתון של הכובע. לא לקטוף' },
+  { kind:'photo', shot:'habitat', title:'צלמו את בית הגידול', note:'הפטרייה והסביבה שלה, מכמה צעדים' },
+  { kind:'count', title:'כמה פרטים יש כאן?' },
+  { kind:'taxon', title:'יודעים מה זה?', note:'לא חובה. אם לא יודעים, ממשיכים' }
+];
+// ---- how to photograph a mushroom (illustrations from Nitzan's guide "בין הכובע לרגל") ----
+var TIPS = {
+  top:     { s:'כובע ברור, מרקם ושוליים', l:'שימו לב שרואים את הכובע בצורה ברורה, כולל המרקם ושולי הכובע.' },
+  under:   { s:'רגל, שכבה פורייה והחיבור ביניהן', l:'שימו לב שרואים את בסיס הרגל, את הרגל ואת השכבה הפורייה, ואת החיבור של השכבה הפורייה לרגל.' },
+  habitat: { s:'כל הפטרייה והסביבה, ממרחק מטר', l:'צלמו ממרחק של כמטר, כך שרואים את כל מבנה הפטרייה: האם היא לבדה, איזה מצע יש סביבה ואיזה צומח.' }
+};
+var GUIDE = [
+  { img:['guide/intro.jpg'], t:'איך מצלמים פטרייה', x:'בכל תצפית 3 תמונות: מלמעלה, מלמטה ובית הגידול. תמונות טובות מאפשרות לזהות את הפטרייה.' },
+  { img:['guide/top.jpg'], t:'1. מלמעלה', x:TIPS.top.l },
+  { img:['guide/under1.jpg', 'guide/under2.jpg'], t:'2. מלמטה', x:TIPS.under.l },
+  { img:['guide/habitat.jpg'], t:'3. בית הגידול', x:TIPS.habitat.l }
+];
+function showGuide(done) {
+  var i = 0, box = document.createElement('div');
+  box.style.cssText = 'position:fixed;inset:0;z-index:5000;background:#fbf6ea;display:flex;flex-direction:column;padding:16px;overflow:auto;direction:rtl';
+  document.body.appendChild(box);
+  function close() { box.remove(); store('guideSeen', 1); if (done) done(); }
+  function draw() {
+    var c = GUIDE[i];
+    box.innerHTML = '<div class="muted" style="text-align:center">' + (i + 1) + ' / ' + GUIDE.length + '</div>' +
+      '<h2 style="text-align:center;margin:6px 0">' + c.t + '</h2>' +
+      c.img.map(function (s) { return '<img src="' + s + '" style="width:100%;max-height:' + (c.img.length > 1 ? 30 : 50) + 'vh;object-fit:contain;margin:4px 0">'; }).join('') +
+      '<p style="font-size:17px;line-height:1.5">' + c.x + '</p>' +
+      '<div style="margin-top:auto"><button id="gNext">' + (i < GUIDE.length - 1 ? 'הבא' : 'הבנתי, לצלם') + '</button>' +
+      (i > 0 ? '<button class="second" id="gPrev">הקודם</button>' : '') +
+      '<button class="second small" id="gSkip">דלג</button>' +
+      '<p class="muted" style="font-size:11px;text-align:center">איורים: מתוך "בין הכובע לרגל", ניצן בר שמואל</p></div>';
+    box.querySelector('#gNext').onclick = function () { if (i < GUIDE.length - 1) { i++; draw(); } else close(); };
+    if (i > 0) box.querySelector('#gPrev').onclick = function () { i--; draw(); };
+    box.querySelector('#gSkip').onclick = close;
+  }
+  draw();
+}
+$('mGuide').onclick = function () { $('menu').classList.add('hidden'); showGuide(); };
+$('btnPlus').onclick = function () {
+  obs = { obs_id:uid(), photos:{}, count:null, taxon_level:'', taxon_name:'' };
+  function go() { step = 0; show('sObs'); renderStep(true); }
+  go();   // the illustrated guide is off until it is finished (9.11)
+};
+function renderStep(autoCamera) {
+  var s = STEPS[step], body = $('stepBody'), ok = $('btnStepOk');
+  $('stepNo').textContent = 'שלב ' + (step + 1) + ' מתוך ' + STEPS.length;
+  $('stepTitle').textContent = s.title;
+  $('btnStepBack').textContent = step === 0 ? 'ביטול' : '→';
+  ok.textContent = step === STEPS.length - 1 ? 'שמירה' : '←';
+  var note = s.note ? '<p class="muted" style="text-align:center">' + s.note + '</p>' : '';
+  if (s.kind === 'photo') {
+    var src = obs.photos[s.shot];
+    body.innerHTML = note + (src
+      ? '<img src="' + src + '" style="width:100%;max-height:45vh;object-fit:contain;border-radius:12px;background:#000">' +
+        '<button class="second" id="btnRetake">צילום מחדש</button>'
+      : '<button id="btnShoot" style="padding:40px 0;font-size:22px">📷 לצילום</button>') +
+      (step > 0 && !src ? '<button class="second small" id="btnSkip" style="margin-top:14px">אי אפשר לצלם, לדלג</button>' : '');
+    ok.disabled = !src;
+    var shoot = function () { openCamera(s.title, s.shot); };
+    if ($('btnShoot')) $('btnShoot').onclick = shoot;
+    if ($('btnRetake')) $('btnRetake').onclick = shoot;
+    if ($('btnSkip')) $('btnSkip').onclick = function () { step++; renderStep(true); };
+    if (autoCamera && !src) shoot();
+  } else if (s.kind === 'count') {
+    body.innerHTML = note + '<div class="chips" style="justify-content:center">' + COUNTS.map(function (c) {
+      return '<button data-n="' + c[1] + '" style="font-size:22px;padding:14px 20px" class="' +
+             (obs.countLabel === c[0] ? 'on' : '') + '">' + c[0] + '</button>'; }).join('') + '</div>' +
+      '<input type="number" id="countExact" min="1" placeholder="או מספר מדויק" inputmode="numeric" style="margin-top:12px"' +
+      (obs.count && !obs.countLabel ? ' value="' + obs.count + '"' : '') + '>';
+    body.querySelectorAll('[data-n]').forEach(function (b) {
+      b.onclick = function () { obs.count = Number(b.dataset.n); obs.countLabel = b.textContent; renderStep(); };
+    });
+    $('countExact').oninput = function () { var n = parseInt(this.value, 10); obs.count = n > 0 ? n : null; obs.countLabel = null;
+      body.querySelectorAll('[data-n]').forEach(function (b) { b.classList.remove('on'); }); ok.disabled = !obs.count; };
+    ok.disabled = !obs.count;
+  } else {
+    body.innerHTML = note + '<div class="chips" style="justify-content:center">' + TAXA.map(function (t) {
+      return '<button data-t="' + t[0] + '" style="font-size:20px;padding:12px 18px" class="' +
+             (obs.taxon_level === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      (obs.taxon_level ? '<input type="text" id="taxName" style="margin-top:12px" placeholder="שם ה' +
+        { species:'מין', genus:'סוג', family:'משפחה' }[obs.taxon_level] + '" value="' + esc(obs.taxon_name) + '">' : '');
+    body.querySelectorAll('[data-t]').forEach(function (b) {
+      b.onclick = function () { obs.taxon_level = b.dataset.t; if (!obs.taxon_level) obs.taxon_name = ''; renderStep();
+        if ($('taxName')) $('taxName').focus(); };
+    });
+    if ($('taxName')) $('taxName').oninput = function () { obs.taxon_name = this.value; };
+    ok.disabled = false;
+  }
+}
+$('btnStepOk').onclick = function () {
+  if (step < STEPS.length - 1) { step++; renderStep(true); return; }
+  saveObs();
+};
+$('btnStepBack').onclick = function () {
+  if (step === 0) { if (confirm('לבטל את התצפית?')) { closeCamera(); obs = null; show(visit.end ? 'sEnd' : 'sSearch'); } return; }
+  step--; renderStep();
+};
+$('btnObsCancel').onclick = $('btnStepBack').onclick;
+
+function openCamera(label, shot) {
+  $('camLabel').textContent = label;
+  var seen = store('camTips') || {}, tip = TIPS[shot];
+  if (tip && !seen[shot]) {   // first time only: a short tip, the arrow opens the full text
+    seen[shot] = 1; store('camTips', seen);
+    $('camLabel').innerHTML = esc(label) + '<div style="font-size:13px;opacity:.9;margin-top:4px">' + tip.s +
+      ' <span id="tipArrow" style="cursor:pointer">▾</span><div id="tipLong" style="display:none;margin-top:4px">' + tip.l + '</div></div>';
+    $('tipArrow').onclick = function () { var o = $('tipLong').style.display === 'none'; $('tipLong').style.display = o ? 'block' : 'none'; this.textContent = o ? '▴' : '▾'; };
+  }
+  if (camStream) { $('camera').classList.remove('hidden'); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { $('fileFallback').click(); return; }
+  navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment', width:{ ideal:1920 }, height:{ ideal:1440 } }, audio:false })
+    .then(function (s) { camStream = s; $('camVideo').srcObject = s; $('camera').classList.remove('hidden'); })
+    .catch(function () { $('fileFallback').click(); });
+}
+function closeCamera() {
+  $('camera').classList.add('hidden');
+  if (camStream) { camStream.getTracks().forEach(function (t) { t.stop(); }); camStream = null; }
+}
+function stampFirstShot() {   // time and place of the observation = moment of the first photo
+  if (obs.t) return;
+  obs.t = Date.now();
+  if (lastFix) { obs.lat = +lastFix.lat.toFixed(7); obs.lon = +lastFix.lon.toFixed(7); obs.acc = Math.round(lastFix.acc * 10) / 10; }
+}
+function storeShot(dataUrl) {
+  obs.photos[STEPS[step].shot] = dataUrl;
+  closeCamera(); renderStep();
+}
+function shrink(source, w, h) {
+  var s = Math.min(1, PHOTO_MAX_PX / Math.max(w, h)), c = document.createElement('canvas');
+  c.width = Math.round(w * s); c.height = Math.round(h * s);
+  c.getContext('2d').drawImage(source, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.8);
+}
+$('btnShutter').onclick = function () {
+  var v = $('camVideo'); if (!v.videoWidth) return;
+  stampFirstShot(); beep('shutter');
+  storeShot(shrink(v, v.videoWidth, v.videoHeight));
+};
+$('btnCamClose').onclick = closeCamera;
+$('fileFallback').onchange = function () {
+  var f = this.files[0]; if (!f) return; stampFirstShot();
+  var img = new Image(); img.onload = function () { storeShot(shrink(img, img.naturalWidth, img.naturalHeight)); URL.revokeObjectURL(img.src); };
+  img.src = URL.createObjectURL(f); this.value = '';
+};
+function saveObs() {
+  obs.taxon_name = obs.taxon_level ? String(obs.taxon_name || '').trim() : '';
+  if (!obs.taxon_name) obs.taxon_level = '';
+  var unnamed = visit.observations.filter(function (o) { return !o.taxon_name; }).length;
+  obs.label = obs.taxon_name || ('מין ' + HEB_LABELS[unnamed % HEB_LABELS.length]);
+  if (obs.lat && searchMap) shroomLayers.push(shroomMarker(obs.lat, obs.lon).addTo(searchMap));
+  visit.observations.push(obs); obs = null;
+  saveDraft();
+  $('obsCount').textContent = visit.observations.length + ' תצפיות';
+  if (visit.end) showEnd(false); else show('sSearch');
+  toast('התצפית נשמרה');
+}
+
+// ================= 7. end of visit =================
+function showEnd(timeUp) {
+  show('sEnd');
+  $('endMsg').textContent = (timeUp ? 'הזמן נגמר, אפשר לעזוב את התא. ' : '') +
+    'תא ' + visit.num + ' · ' + fmt((visit.end - visit.start) / 1000) + ' דקות · ' + visit.track.length + ' נקודות מסלול';
+  $('endCards').innerHTML = visit.observations.map(function (o) {
+    return '<div class="card"><b>' + esc(o.label) + '</b>' +
+      (o.taxon_level ? ' <span class="muted">(' + { species:'מין', genus:'סוג', family:'משפחה' }[o.taxon_level] + ')</span>' : '') +
+      ' · ' + (o.countLabel || o.count) + ' פרטים<div class="thumbs">' +
+      SHOTS.map(function (s) { return o.photos[s[0]] ? '<img src="' + o.photos[s[0]] + '">' : ''; }).join('') + '</div></div>';
+  }).join('');
+  var none = visit.observations.length === 0;
+  $('btnNothing').classList.toggle('hidden', !none);
+  $('btnSendNow').classList.toggle('hidden', none);
+  $('btnSendLater').textContent = none ? 'לא מצאתי · לשלוח אחר כך' : 'לשלוח אחר כך';
+  if (!none) $('endCards').insertAdjacentHTML('beforeend', '<button class="second" id="btnMore">עוד תצפית</button>');
+  if (!none) $('btnMore').onclick = function () { $('btnPlus').onclick(); };
+}
+$('btnNothing').onclick = function () { $('btnSendNow').onclick(); };
+$('btnPark').onclick = function () {   // nothing is deleted: the visit waits in drafts
+  visit.parked = true; saveDraft(); visit = null; goHome(); toast('נשמר בטיוטות. אפשר לחזור אליו מהכפתור "טיוטה"');
+};
+$('btnDraft').onclick = function () {
+  var d = store('draft'); if (!d) return;
+  visit = d; visit.parked = false; saveDraft(); showEnd(false);
+};
+function packVisit(auto) {
+  var pkg = {
+    auto:auto,
+    visit:{ visit_id:visit.visit_id, cell_id:visit.cell.id, quality:visit.quality, start:visit.start, end:visit.end },
+    observations:visit.observations.map(function (o) {
+      return { obs_id:o.obs_id, t:o.t, lat:o.lat, lon:o.lon, acc:o.acc, count:o.count,
+               taxon_level:o.taxon_level, taxon_name:o.taxon_name, label:o.label, photos:o.photos };
+    }),
+    track:visit.track
+  };
+  return outboxPut(pkg).then(function () {
+    visitedIds[visit.cell.id] = 1; store('visitedIds', visitedIds);
+    forget('draft'); visit = null;
+  });
+}
+$('btnSendNow').onclick = function () {
+  packVisit(true).then(function () { goHome(); toast('שולח...'); return sendOutbox(false); });
+};
+$('btnSendLater').onclick = function () {
+  packVisit(false).then(function () { goHome(); toast('נשמר בטלפון. אפשר לשלוח מהכפתור "ממתינים לשליחה"'); });
+};
+
+// ================= 8. history =================
+var histLayers = [];
+function photoViewer(obsId, kinds, caption) {
+  var v = document.createElement('div'); v.className = 'viewer';
+  v.innerHTML = '<img id="pvImg" alt=""><div class="cap">' + esc(caption) + '</div><div class="chips" id="pvKinds"></div>' +
+                '<button class="second small" id="pvClose">סגירה</button>';
+  document.body.appendChild(v);
+  v.querySelector('#pvClose').onclick = function () { v.remove(); };
+  function load(kind) {
+    v.querySelector('#pvImg').src = '';
+    api('photo', { obs_id:obsId, kind:kind }).then(function (r) { v.querySelector('#pvImg').src = 'data:image/jpeg;base64,' + r.data; })
+      .catch(function (e) { toast(errText(e)); });
+  }
+  var names = { top:'מלמעלה', under:'מלמטה', habitat:'בית הגידול' };
+  v.querySelector('#pvKinds').innerHTML = kinds.map(function (k) { return '<button data-k="' + k + '">' + names[k] + '</button>'; }).join('');
+  v.querySelectorAll('[data-k]').forEach(function (b) { b.onclick = function () { load(b.dataset.k); }; });
+  if (kinds.length) load(kinds[0]);
+}
+function drawVisits(map, layers, visits, colorOf, withTracks) {
+  layers.forEach(function (l) { map.removeLayer(l); }); layers.length = 0;
+  var b = L.latLngBounds([]);
+  visits.forEach(function (v) {
+    var col = colorOf(v);
+    if (v.cell) { var p = cellPolygon(v.cell, { color:col, weight:2, fillOpacity:.1 }).addTo(map); layers.push(p); b.extend(p.getBounds());
+      p.bindPopup(esc(v.who) + '<br>דירוג ' + v.quality + ' · ' + (v.nothing_found == 1 ? 'לא נמצא כלום' : v.observations.length + ' תצפיות')); }
+    v.observations.forEach(function (o) {
+      if (!o.lat) return;
+      var m = L.circleMarker([o.lat, o.lon], { radius:7, color:'#fff', weight:2, fillColor:col, fillOpacity:1 }).addTo(map);
+      m.on('click', function () { photoViewer(o.obs_id, o.photos, o.label + ' · ' + o.count + ' פרטים · ' + esc(v.who)); });
+      layers.push(m);
+    });
+    if (withTracks) api('track', { visit_id:v.visit_id }).then(function (r) {
+      if (r.points.length) layers.push(L.polyline(r.points, { color:col, weight:3, opacity:.8 }).addTo(map));
+    }).catch(function () {});
+  });
+  if (b.isValid()) map.fitBounds(b.pad(0.3));
+}
+function openHistory() {
+  $('menu').classList.add('hidden'); show('sHistory');
+  if (!histMap) histMap = makeMap('histMap');
+  $('histList').innerHTML = '<p class="muted">טוען...</p>';
+  api('history').then(function (r) {
+    var mine = r.visits.filter(function (v) { return v.mine; });
+    drawVisits(histMap, histLayers, r.visits, function (v) { return v.mine ? '#b0b0b0' : '#8a5cc2'; }, true);
+    $('histList').innerHTML = (r.access === 'all' ? '<p class="muted">ירוק: שלך · סגול: של משתתפים אחרים</p>' : '') +
+      (mine.length ? mine.map(function (v) {
+        return '<div class="cellrow"><div class="grow">' + new Date(v.start).toLocaleDateString('he-IL') + ' · דירוג ' + v.quality + ' · ' +
+               (v.nothing_found == 1 ? 'לא נמצא כלום' : v.observations.length + ' תצפיות') + '</div></div>';
+      }).join('') : '<p>עדיין לא נשלחו ביקורים.</p>');
+  }).catch(function (e) { $('histList').innerHTML = '<p>' + errText(e) + '</p>'; });
+}
+$('mHistory').onclick = openHistory;
+// ================= choice of kit: Carmel research, or try your luck near you =================
+var NEAR_KM = 0.5;   // close by: a few minutes' walk to each cell
+function showChoice() {
+  kitLayers.forEach(function (l) { homeMap.removeLayer(l); }); kitLayers = [];
+  var open = kit.cells && kit.cells.some(function (c) { return !(visitedIds[c.id] || c.done); });
+  $('homeSheet').innerHTML =
+    '<h2 style="margin-bottom:6px">איפה מחפשים היום?</h2>' +
+        (open ? '<div class="card"><b>המשך ניטור קיים</b><p class="muted" style="margin:4px 0 0">יש לך תאים פתוחים שעוד לא דווחו</p>' +
+            '<button id="btnChoiceBack">המשך לתאים הפתוחים</button></div>' : '') +
+    '<div class="card"><b>מה נמצא לידי</b><p class="muted" style="margin:4px 0 0">ביער של קק"ל הקרוב, עד ' + NEAR_KM * 1000 + ' מטר ממך (אם אין יער קרוב: עד 3 ק"מ)</p>' +
+    '<button id="btnNear">3 תאים אקראיים לידי</button>' +
+    '<button class="second" id="btnDrop">זרוק עליי: תא אחד שאני במרכז שלו</button>' +
+    (rtgOpen() ? '' : '<p class="muted" style="margin:6px 0 0;font-size:13px">🟧 שטחים כתומים במפה הם של רשות הטבע והגנים. ' +
+      'בשמורות טבע אסור לרדת מהשבילים, ולכן לא מגרילים בהם תאים.</p>') + '</div>' +
+    '<div class="card"><b>ניטור לפי מודל</b><p class="muted" style="margin:4px 0 0">חלק מהמחקר: תאים שהמודל בחר. אפשר להגריל בבית, והתאים נשמרים בטלפון</p>' +
+        '<button class="second" id="btnHereForest">📍 היער שאני בו</button>' +
+    '<button class="second" id="btnPickForest">🔎 בחירת יער מרשימה</button></div>';
+  $('btnHereForest').onclick = hereForest;
+  $('btnPickForest').onclick = pickForest;
+  $('btnNear').onclick = nearKit;
+  $('btnDrop').onclick = dropKit;
+  if ($('btnChoiceBack')) $('btnChoiceBack').onclick = function () { choosing = false; drawKit(); };
+}
+// the phone draws the cells itself from the areas it carries; the server only saves them
+function drawNearCenters(lat, lon) {
+  var out = [];
+  [NEAR_KM * 1000, 1500, 3000].some(function (R) {
+    out = [];
+    for (var i = 0; i < 4000 && out.length < 7; i++) {   // 7: spares, the server drops cliffs and extra steep cells
+      var d = 60 + Math.sqrt(Math.random()) * (R - 60), a = Math.random() * 2 * Math.PI;
+      var cLat = lat + d * Math.sin(a) / M_LAT, cLon = lon + d * Math.cos(a) / mLon(lat);
+      var apart = out.every(function (p) { return Math.max(Math.abs(p[0] - cLat) * M_LAT, Math.abs(p[1] - cLon) * mLon(lat)) > 70; });
+      if (apart && cellOk(cLat, cLon)) out.push([+cLat.toFixed(7), +cLon.toFixed(7)]);
+    }
+    out.radius = R; return out.length >= 3;
+  });
+  return out.length >= 3 ? out : null;
+}
+function saveTestKit(params, msg) {
+  toast('שומר את התאים...', 15000);
+  return api('testKit', params).then(function (r) {
+    kit = r; store('kit', r); visitedIds = {}; store('visitedIds', visitedIds); drawKit(); toast(msg, 6000);
+  }).catch(function (e) { toast(errText(e)); });
+}
+function dropKit() {
+  choosing = false;
+  if (!lastFix) { toast('מחכה למיקום GPS... לחצו על ◎ במפה'); return; }
+  loadAreas().then(function () {
+    if (AREAS && !rtgOpen() && areaAt(lastFix.lat, lastFix.lon).rtg) { choosing = true; alert(RTG_WHY + '\n\nאפשר לזרוק תא מחוץ לשטח הכתום.'); return; }
+    saveTestKit({ lat:lastFix.lat, lon:lastFix.lon, centers:[[+lastFix.lat.toFixed(7), +lastFix.lon.toFixed(7)]], mode:'drop' },
+                'נוצר תא אחד סביבך. את/ה במרכז שלו');
+  });
+}
+function nearKit() {
+  choosing = false;
+  if (!lastFix) { toast('מחכה למיקום GPS... לחצו על ◎ במפה'); return; }
+  loadAreas().then(function () {
+    if (!AREAS) { nearKitOnline(); return; }   // the layers did not load: the server looks them up
+    var c = drawNearCenters(lastFix.lat, lastFix.lon);
+    if (!c) { choosing = true; toast('אין יער קק"ל פתוח עד 3 ק"מ ממך' + (rtgOpen() ? '' : ' (שטחי רט"ג לא נכללים, כי שם אסור לרדת מהשבילים)') + '. אפשר "זרוק עליי"', 9000); return; }
+    saveTestKit({ lat:lastFix.lat, lon:lastFix.lon, centers:c, mode:'near' },
+                c.radius > NEAR_KM * 1000 ? 'אין יער ממש לידך, ולכן התאים עד ' + (c.radius / 1000) + ' ק"מ ממך' : 'נוצרו 3 תאים ביער לידך');
+  });
+}
+function nearKitOnline() {
+  toast('מחפש יער קרוב...', 15000);
+  api('testKit', { lat:lastFix.lat, lon:lastFix.lon, km:NEAR_KM }).then(function (r) {
+    kit = r; store('kit', r); visitedIds = {}; store('visitedIds', visitedIds); drawKit(); toast(r.radius_m > NEAR_KM * 1000 ? 'אין יער ממש לידך, ולכן התאים עד ' + (r.radius_m / 1000) + ' ק"מ ממך' : 'נוצרו 3 תאים ביער לידך', 6000);
+  }).catch(function (e) { toast(errText(e)); });
+}
+$('mTestKit').onclick = function () { $('menu').classList.add('hidden'); choosing = true; showChoice(); };
+document.querySelectorAll('.back').forEach(function (b) { b.onclick = goHome; });
+
+// ================= 9. admin =================
+var adminLayers = [], adminData = null;
+var PALETTE = ['#2f6b3a', '#b3261e', '#1a73e8', '#e8a01a', '#8a5cc2', '#00897b', '#d81b60', '#6d4c41', '#3949ab', '#7cb342'];
+function openAdmin() {
+  $('menu').classList.add('hidden'); show('sAdmin');
+  if (!adminMap) adminMap = makeMap('adminMap');
+  $('adminSummary').textContent = 'טוען...';
+  api('adminData').then(function (r) { adminData = r; renderAdmin(); }).catch(function (e) { $('adminSummary').textContent = errText(e); });
+}
+function colorOfEmail(email) {
+  var i = adminData.users.map(function (u) { return u.email; }).indexOf(email); return PALETTE[(i < 0 ? 0 : i) % PALETTE.length];
+}
+function renderAdmin() {
+  var who = $('adminWho').value || '';
+  $('adminWho').innerHTML = '<option value="">כל המשתתפים</option>' + adminData.users.filter(function (u) { return u.n_visits; })
+    .map(function (u) { return '<option value="' + esc(u.email) + '">' + esc(u.email) + '</option>'; }).join('');
+  $('adminWho').value = who;
+  var visits = adminData.visits.filter(function (v) { return !who || v.email === who; });
+  drawVisits(adminMap, adminLayers, visits, function (v) { return colorOfEmail(v.email); }, true);
+  var nObs = visits.reduce(function (s, v) { return s + v.observations.length; }, 0);
+  var nExp = adminData.users.filter(function (u) { return u.role === 'expert' && u.status === 'approved'; }).length;
+  $('adminSummary').textContent = visits.length + ' ביקורים · ' + nObs + ' תצפיות · ' + nExp + ' סוקרים מומחים · ' +
+    adminData.users.filter(function (u) { return u.status === 'pending'; }).length + ' בקשות ממתינות';
+  var st = { pending:'ממתין', approved:'מאושר', blocked:'חסום', removed:'הוסר' };
+  $('adminUsers').innerHTML = '<tr><th>מייל</th><th>ביקורים</th><th>מצב</th><th>תפקיד</th><th>רואה</th></tr>' + adminData.users.map(function (u) {
+    var me = u.no === 0 || u.no === '0';
+    return '<tr><td style="color:' + colorOfEmail(u.email) + '">' + esc(u.email) + '</td><td>' + u.n_visits + ' / ' + u.n_obs + '</td><td>' +
+      (me ? 'מנהלת' : '<select data-s="' + esc(u.email) + '">' + ['pending', 'approved', 'blocked', 'removed'].map(function (s) {
+        return '<option value="' + s + '"' + (u.status === s ? ' selected' : '') + (s === 'pending' ? ' disabled' : '') + '>' + st[s] + '</option>'; }).join('') + '</select>') +
+      '</td><td>' + (me ? 'סוקרת מומחית' : '<select data-r="' + esc(u.email) + '"><option value="citizen"' + (u.role !== 'expert' ? ' selected' : '') +
+      '>אזרח</option><option value="expert"' + (u.role === 'expert' ? ' selected' : '') + '>סוקר מומחה</option></select>') +
+      '</td><td>' + (me ? 'הכול' : '<select data-a="' + esc(u.email) + '"><option value="own"' + (u.access === 'own' ? ' selected' : '') +
+      '>רק שלו</option><option value="all"' + (u.access === 'all' ? ' selected' : '') + '>שלו ושל אחרים</option></select>') + '</td></tr>';
+  }).join('');
+  $('adminUsers').querySelectorAll('[data-s]').forEach(function (s) { s.onchange = function () { adminSet({ target:s.dataset.s, status:s.value }); }; });
+  $('adminUsers').querySelectorAll('[data-a]').forEach(function (s) { s.onchange = function () { adminSet({ target:s.dataset.a, access:s.value }); }; });
+  $('adminUsers').querySelectorAll('[data-r]').forEach(function (s) { s.onchange = function () { adminSet({ target:s.dataset.r, role:s.value }); }; });
+}
+function adminSet(body) {
+  api('adminSetUser', body).then(function () { toast('עודכן'); openAdmin(); }).catch(function (e) { toast(errText(e)); });
+}
+$('adminWho').onchange = renderAdmin;
+$('btnAdminReload').onclick = openAdmin;
+$('mAdmin').onclick = openAdmin;
+
+// ================= start =================
+openDb().then(function () {
+  var draft = store('draft');
+  if (session && draft && draft.start && !draft.parked) {   // the app was closed in the middle of a visit
+    visit = draft;
+    if (!draft.end) { draft.end = Date.now(); saveDraft(); }
+    showEnd(false); toast('המשך של ביקור שלא הסתיים');
+    return;
+  }
+  if (session) afterLogin(); else startLogin();
+  if (session) sendOutbox(true);
+});
+if ('serviceWorker' in navigator && !MOCK) navigator.serviceWorker.register('sw.js').catch(function () {});
+
+// ================= local mock of the Google side (for testing only) =================
+var Mock = (function () {
+  var S = store('mockState') || { users:{}, kits:[], visits:[], obs:[], photos:{}, tracks:{} };
+  var cells = null;
+  function save() { try { localStorage.setItem('mockState', JSON.stringify(S)); } catch (e) {} }
+  function loadCells() {
+    if (cells) return Promise.resolve(cells);
+    return fetch('google/cells.json').then(function (r) { return r.json(); }).then(function (j) { cells = j.cells; return cells; });
+  }
+  function pub(c) { return { id:c.id, center:c.center, corners:c.corners }; }
+  function kitOf(email) {
+    var byId = {}; cells.forEach(function (c) { byId[c.id] = c; });
+    var k = S.kits.filter(function (k) { return k.email === email && (k.status === 'active' || k.status === 'visited'); });
+    if (!k.some(function (x) { return x.status === 'active'; }) && k.length < 3) k = [];
+    return { ok:true, kit_no:k.length ? 1 : null, cells:k.map(function (x) { var c = pub(byId[x.cell_id]); c.done = x.status === 'visited'; return c; }) };
+  }
+  function auth(b) { var u = S.users[b.email]; if (!u || u.token !== b.token) throw new Error('signed_out'); return u; }
+  var A = {
+    requestJoin:function (b) { var e = b.email; if (!S.users[e]) S.users[e] = { email:e, status:'approved', access:'own', no:Object.keys(S.users).length + 1 };
+      return { ok:true, state:'code_sent' }; },
+    verifyCode:function (b) { var u = S.users[b.email]; if (!u) throw new Error('not_approved'); if (b.code !== '123456') throw new Error('wrong_code');
+      u.token = uid(); return { ok:true, token:u.token, email:u.email, access:u.access, consent:!!u.consent, admin:/admin|admin/.test(u.email) }; },
+    me:function (b) { var u = auth(b); return { ok:true, email:u.email, access:u.access, consent:!!u.consent, admin:/admin|admin/.test(u.email) }; },
+    consent:function (b) { auth(b).consent = Date.now(); return { ok:true }; },
+    kit:function (b) { auth(b); return kitOf(b.email); },
+    drawKit:function (b) { auth(b);
+      S.kits.forEach(function (k) { if (k.email === b.email && (k.status === 'visited' || k.status === 'active')) k.status = 'closed'; });
+      var seed = cells[Math.floor(Math.random() * cells.length)], pick = [];
+      ['hot', 'middle', 'cold'].forEach(function (lv) {
+        var c = cells.filter(function (c) { return c.level === lv && pick.indexOf(c) < 0; })
+          .sort(function (a, z) { return Math.hypot(a.x - seed.x, a.y - seed.y) - Math.hypot(z.x - seed.x, z.y - seed.y); })[0];
+        pick.push(c);
+      });
+      pick.forEach(function (c) { S.kits.push({ email:b.email, kit_no:1, cell_id:c.id, level:c.level, status:'active' }); });
+      return kitOf(b.email); },
+    replaceCell:function (b) { auth(b);
+      var k = S.kits.filter(function (k) { return k.email === b.email && k.status === 'active' && k.cell_id === b.cell_id; })[0];
+      k.status = 'replaced';
+      var c = cells.filter(function (c) { return c.level === k.level && !S.kits.some(function (x) { return x.cell_id === c.id; }); })[0];
+      S.kits.push({ email:b.email, kit_no:1, cell_id:c.id, level:c.level, status:'active' }); return kitOf(b.email); },
+    uploadVisit:function (b) { auth(b);
+      if (S.visits.some(function (v) { return v.visit_id === b.visit.visit_id; })) return { ok:true, duplicate:true };
+      S.visits.push(Object.assign({ email:b.email, nothing_found:b.observations.length ? 0 : 1 }, b.visit));
+      b.observations.forEach(function (o) { S.obs.push(Object.assign({ email:b.email, visit_id:b.visit.visit_id, photos:[] }, o)); });
+      S.tracks[b.visit.visit_id] = b.track.map(function (p) { return [p.lat, p.lon]; });
+      S.kits.forEach(function (k) { if (k.email === b.email && k.status === 'active' && k.cell_id === b.visit.cell_id) k.status = 'visited'; });
+      return { ok:true }; },
+    uploadPhoto:function (b) { auth(b); var o = S.obs.filter(function (o) { return o.obs_id === b.obs_id; })[0];
+      if (o.photos.indexOf(b.kind) < 0) o.photos.push(b.kind); S.photos[b.obs_id + '_' + b.kind] = b.data; return { ok:true }; },
+    history:function (b) { var u = auth(b); return { ok:true, access:u.access, visits:visitsOf(function (v) { return v.email === b.email || u.access === 'all'; })
+      .map(function (v) { v.mine = v.email === b.email; v.who = v.mine ? 'אני' : 'משתתף ' + S.users[v.email].no; return v; }) }; },
+    photo:function (b) { auth(b); return { ok:true, data:S.photos[b.obs_id + '_' + b.kind] }; },
+    track:function (b) { auth(b); return { ok:true, points:S.tracks[b.visit_id] || [] }; },
+    adminData:function (b) { auth(b);
+      return { ok:true, visits:visitsOf(function () { return true; }).map(function (v) { v.who = v.email; return v; }),
+        users:Object.keys(S.users).map(function (e) { var u = S.users[e];
+          return { email:e, no:/admin|admin/.test(e) ? 0 : u.no, status:u.status, access:u.access, role:u.role || (/admin/.test(e) ? 'expert' : 'citizen'),
+                   n_visits:S.visits.filter(function (v) { return v.email === e; }).length, n_obs:S.obs.filter(function (o) { return o.email === e; }).length }; }) }; },
+    testKit:function (b) { auth(b);
+      S.kits.forEach(function (k) { if (k.email === b.email && k.status === 'active') k.status = 'replaced'; });
+      (b.centers ? b.centers.slice(0, b.mode === 'drop' ? 1 : 3) : [0, 1, 2]).forEach(function (cc, i) {
+        var lv = 'none', a = i * 1.26, d = 150 + 30 * i, lat = b.lat + d * Math.sin(a) / 110574, lon = b.lon + d * Math.cos(a) / 93800;
+        if (b.centers) { lat = cc[0]; lon = cc[1]; }
+        var h = 30 / 110574, w = 30 / 93800, id = 'T' + Date.now() + '_' + i;
+        cells.push({ id:id, level:lv, x:lon * 93800, y:lat * 110574, center:[lat, lon], corners:[[lat - h, lon - w], [lat - h, lon + w], [lat + h, lon + w], [lat + h, lon - w]] });
+        S.kits.push({ email:b.email, kit_no:1, cell_id:id, level:lv, status:'active' });
+      });
+      return kitOf(b.email); },
+    adminSetUser:function (b) { auth(b); var u = S.users[b.target]; if (b.status) { u.status = b.status; if (b.status !== 'approved') u.token = null; }
+      if (b.access) u.access = b.access; if (b.role) u.role = b.role; return { ok:true }; }
+  };
+  function visitsOf(filter) {
+    var byId = {}; cells.forEach(function (c) { byId[c.id] = c; });
+    return S.visits.filter(filter).map(function (v) {
+      return { visit_id:v.visit_id, email:v.email, cell:pub(byId[v.cell_id]), quality:v.quality, start:v.start,
+               minutes:(v.end - v.start) / 60000, nothing_found:v.nothing_found,
+               observations:S.obs.filter(function (o) { return o.visit_id === v.visit_id; })
+                 .map(function (o) { return { obs_id:o.obs_id, lat:o.lat, lon:o.lon, count:o.count, label:o.label, photos:o.photos }; }) };
+    });
+  }
+  return { state:S, call:function (b) {
+    return loadCells().then(function () {
+      var r = A[b.action](b); save(); return JSON.parse(JSON.stringify(r));
+    });
+  } };
+})();
+</script>
+</body>
+</html>
